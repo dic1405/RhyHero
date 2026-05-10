@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Glyph Dungeon — Slot & Dagger</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:'Rajdhani',sans-serif;overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-user-select:none;touch-action:manipulation;display:flex;justify-content:center}
+#game-wrap{position:relative;width:100%;max-width:430px;height:100vh;overflow:hidden}
+canvas{display:block;width:100%;height:100%}
+#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+#ui *{pointer-events:auto}
+.bar-wrap{position:relative;width:70%;max-width:260px;height:14px;border:2px solid;border-radius:2px;overflow:hidden;background:rgba(0,0,0,.6);margin:0 auto}
+.bar-fill{height:100%;transition:width .4s;border-radius:1px}
+
+/* Enemy section — centered below enemy sprite at ~13% */
+#enemy-section{position:absolute;top:18%;left:50%;transform:translateX(-50%);text-align:center;width:80%;max-width:300px;pointer-events:none}
+#e-label{font:11px 'Orbitron',monospace;color:#ff336688;letter-spacing:2px;margin-bottom:4px}
+#e-hp-wrap{border-color:#ff3366;margin-bottom:3px}
+#e-hp-fill{background:linear-gradient(90deg,#ff3366,#cc2255);width:100%}
+#e-hp-txt{font:11px 'Orbitron',monospace;color:#ff3366;text-shadow:0 0 8px #ff336666;margin-bottom:2px}
+#e-atk{font:10px 'Orbitron',monospace;color:#ff336666;letter-spacing:1px}
+
+/* Player section — centered below player sprite at ~90% */
+#player-section{position:absolute;bottom:2%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:320px;pointer-events:none}
+#p-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:0 4px}
+#p-hp-txt{font:12px 'Orbitron',monospace;color:#00ffaa;text-shadow:0 0 8px #00ffaa66}
+#gold-display{font:12px 'Orbitron',monospace;color:#ffaa00;text-shadow:0 0 8px #ffaa0044}
+#p-hp-wrap{border-color:#00ffaa;margin-bottom:4px}
+#p-hp-fill{background:linear-gradient(90deg,#00ffaa,#00cc88);width:100%}
+#p-shield-wrap{border-color:#4488ff;height:8px;margin-bottom:2px}
+#p-shield-fill{background:linear-gradient(90deg,#4488ff,#2266cc);width:0%}
+#p-shield-txt{font:9px 'Orbitron',monospace;color:#4488ff88}
+#phase-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:32px/1 'Orbitron',monospace;font-weight:900;color:#fff;text-shadow:0 0 30px currentColor;opacity:0;transition:opacity .3s;pointer-events:none}
+#hit-fb{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font:24px 'Orbitron',monospace;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .3s}
+#result-display{position:absolute;bottom:18%;left:50%;transform:translateX(-50%);font:14px 'Orbitron',monospace;color:#aaa;text-align:center;pointer-events:none;white-space:nowrap}
+#info{position:absolute;top:85px;left:50%;transform:translateX(-50%);font:13px 'Orbitron',monospace;color:#666;text-align:center;pointer-events:none}
+#instructions{position:absolute;bottom:16%;left:50%;transform:translateX(-50%);font:13px 'Rajdhani',sans-serif;color:#555;text-align:center;pointer-events:none}
+.overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(5,5,10,.93);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100}
+.overlay h1{font:48px 'Orbitron',monospace;font-weight:900;margin-bottom:20px}
+.overlay p{font:20px 'Rajdhani',sans-serif;color:#888;margin-bottom:30px}
+.btn{font:16px 'Orbitron',monospace;padding:14px 40px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;transition:all .2s}
+.btn:hover{background:#00ffaa;color:#0a0a0f}
+#roll-btn:hover{background:#ffaa00;color:#0a0a0f;border-color:#ffaa00}
+#start-screen{display:flex}
+#start-screen h1{color:#00ffaa;text-shadow:0 0 40px #00ffaa44}
+#start-screen .sub{font:18px 'Rajdhani',sans-serif;color:#556;margin-bottom:30px}
+#start-screen .ctrls{font:15px 'Rajdhani',sans-serif;color:#667;margin-bottom:30px;text-align:center;line-height:2}
+#start-screen .ctrls span{color:#00ffaa;font-weight:600}
+#pause-btn{position:absolute;top:12px;left:12px;font-size:20px;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid #ffffff22;color:#ffffff88;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;line-height:1}
+#pause-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+</style>
+</head>
+<body>
+<div id="game-wrap">
+<canvas id="c"></canvas>
+<div id="ui">
+  <!-- Enemy section — centered below enemy sprite -->
+  <div id="enemy-section">
+    <div id="e-label">ENEMY 1</div>
+    <div id="e-hp-wrap" class="bar-wrap"><div id="e-hp-fill" class="bar-fill"></div></div>
+    <div id="e-hp-txt">300/300</div>
+    <div id="e-atk">ATK: 30</div>
+  </div>
+
+  <!-- Player section — centered below player sprite -->
+  <div id="player-section">
+    <div id="p-row">
+      <div id="p-hp-txt">PLAYER 300/300</div>
+      <div id="gold-display">💰 0</div>
+    </div>
+    <div id="p-hp-wrap" class="bar-wrap"><div id="p-hp-fill" class="bar-fill"></div></div>
+    <div id="p-shield-wrap" class="bar-wrap"><div id="p-shield-fill" class="bar-fill"></div></div>
+    <div id="p-shield-txt"></div>
+  </div>
+
+  <div id="phase-label"></div>
+  <div id="hit-fb"></div>
+  <div id="info"></div>
+  <div id="result-display"></div>
+  <div id="instructions"></div>
+
+  <button id="pause-btn">⏸</button>
+  <button id="roll-btn" class="btn" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;border-color:#ffaa00;color:#ffaa00;font-size:18px;padding:16px 50px">🎲 ROLL</button>
+
+  <div id="pause-screen" class="overlay">
+    <h1 style="color:#ffaa00;text-shadow:0 0 40px #ffaa0044">PAUSED</h1>
+    <p>Press ESC or tap to resume</p>
+    <button class="btn" id="resume-btn">RESUME</button>
+  </div>
+
+  <div id="start-screen" class="overlay">
+    <h1>GLYPH DUNGEON</h1>
+    <p class="sub">Slot &amp; Dagger</p>
+    <div class="ctrls">
+      Watch the slots roll on beat<br>
+      Then press <span>SPACE</span> or <span>TAP</span> at each intersection<br>
+      ⚔ Sword = damage &nbsp; 🛡 Shield = block &nbsp; 💰 Gold = riches<br>
+      Triple match = massive bonus!
+    </div>
+    <button class="btn" id="start-btn">BEGIN</button>
+  </div>
+
+  <div id="gameover-screen" class="overlay">
+    <h1 id="go-title">DEFEATED</h1>
+    <p id="go-sub"></p>
+    <button class="btn" id="restart-btn">AGAIN</button>
+  </div>
+</div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// ── Audio ──
+const AC = window.AudioContext || window.webkitAudioContext;
+let ac;
+function ensureAC(){ if(!ac) ac = new AC() }
+function tone(f,d,v=.12,t='sine'){
+  ensureAC();
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.type=t;o.frequency.value=f;
+  g.gain.setValueAtTime(v,ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);
+  o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);
+}
+
+// ── MP3 Sound Effects ──
+const AUDIO_BASE = 'https://raw.githubusercontent.com/dic1405/RhyHero/main/';
+const mp3Cache = {};
+
+function loadMP3(name, url){
+  const audio = new Audio(url);
+  audio.preload = 'auto';
+  mp3Cache[name] = audio;
+}
+loadMP3('slot', AUDIO_BASE + 'Slot.mp3');
+loadMP3('sword', AUDIO_BASE + 'Sword.mp3');
+loadMP3('shield', AUDIO_BASE + 'Shield.mp3');
+loadMP3('coin', AUDIO_BASE + 'Coin.mp3');
+
+function playMP3(name, vol=1.0){
+  const src = mp3Cache[name];
+  if(!src) return;
+  const a = src.cloneNode();
+  a.volume = Math.min(1, vol);
+  a.play().catch(()=>{});
+}
+
+const sfx = {
+  slotTick(){ playMP3('slot', 0.5) },
+  slotLand(icon){
+    // Play icon-specific sound when slot lands
+    if(icon==='sword') playMP3('sword');
+    else if(icon==='shield') playMP3('shield');
+    else if(icon==='gold') playMP3('coin');
+    else playMP3('slot');
+  },
+  slotRoll(){ playMP3('slot', 0.6) },
+  beatSlotF(){ playMP3('slot', 0.7) },
+  beatSlotHH(){ playMP3('slot', 0.5); setTimeout(()=>playMP3('slot', 0.5), BEAT*1000*0.5) },
+  perfect(){ tone(880,.15,.15); setTimeout(()=>tone(1320,.12,.12),60) },
+  great(){ tone(660,.12,.1) },
+  cool(){ tone(440,.1,.08) },
+  miss(){ tone(150,.2,.1,'sawtooth') },
+  enemyHit(){ tone(100,.3,.15,'sawtooth') },
+  triple(){ [0,60,120,180].forEach((d,i)=>setTimeout(()=>tone(800+i*200,.12,.12),d)) },
+  nextEnemy(){ tone(600,.15,.12); setTimeout(()=>tone(800,.15,.12),120); setTimeout(()=>tone(1000,.2,.1),240) },
+  defeat(){ [0,150,300].forEach((d,i)=>setTimeout(()=>tone(300-i*80,.4,.12,'sawtooth'),d)) },
+  tick(){ playMP3('slot', 0.4) },
+};
+
+// ── Constants ──
+const BEAT = 60/85; // seconds per full beat (85 BPM)
+const PLAYER_MAX_HP = 300;
+const BASE_ENEMY_HP = 300;
+const ENEMY_DMG = 30;
+const ICONS = ['sword','shield','gold'];
+const ICON_SYMBOLS = { sword:'⚔', shield:'🛡', gold:'💰' };
+const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00' };
+
+// ── State ──
+let playerHP = PLAYER_MAX_HP;
+let playerShield = 0;
+let gold = 0;
+let enemyMaxHP = BASE_ENEMY_HP;
+let enemyHP = BASE_ENEMY_HP;
+let enemyNum = 1;
+
+// Slot state
+let slotIcons = [null,null,null]; // rolled icons
+let slotBeats = [null,null,null]; // 'F' or 'HH'
+let slotPhase = 'idle';
+// 'rolling-icons' -> 'rolling-beats' -> 'show-result' -> 'playing' -> 'enemy-turn' -> back
+let slotStep = 0; // which slot is rolling (0,1,2)
+let slotTimer = 0;
+let slotRollAnim = 0; // for visual spin
+
+// Glyph / rhythm state
+let glyphVerts = [];
+let glyphEdges = [];
+let edgeDurs = [];
+let dotSeg = 0, dotProg = 0;
+let intHits = [];
+let totalInts = 0;
+let turnResults = [];
+let phaseActive = false;
+let showingResults = false;
+
+// Reward tracking
+let baseValues = { sword:0, shield:0, gold:0 };
+let tapValues = { sword:0, shield:0, gold:0 };
+let allPerfectSoFar = true;
+let isAllPerfect = false;
+
+// FX
+let particles = [];
+let shake = 0;
+let glow = 0;
+let lastTime = 0;
+let paused = false;
+
+// BG
+const bgP = [];
+for(let i=0;i<40;i++) bgP.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.00005,vy:(Math.random()-.5)*.00005,r:Math.random()*2+.5,a:Math.random()*.3});
+
+// ── Canvas ──
+const gameWrap = document.getElementById('game-wrap');
+function resize(){
+  const w = gameWrap.clientWidth;
+  const h = gameWrap.clientHeight;
+  canvas.width = w * devicePixelRatio;
+  canvas.height = h * devicePixelRatio;
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+addEventListener('resize',resize); resize();
+const W=()=>gameWrap.clientWidth, H=()=>gameWrap.clientHeight;
+
+// ── Slot Machine Logic ──
+// Results are pre-calculated so sounds can match the actual rhythm
+const INIT_EDGES = 1; // 1 leading edge as count-in, not tappable
+
+function showRollButton(){
+  document.getElementById('roll-btn').style.display = 'block';
+  document.getElementById('info').textContent = '';
+  document.getElementById('result-display').textContent = '';
+  document.getElementById('instructions').textContent = '';
+  // Reset indicator values for fresh display
+  baseValues = { sword:0, shield:0, gold:0 };
+  tapValues = { sword:0, shield:0, gold:0 };
+  isAllPerfect = false;
+}
+
+function startSlotPhase(){
+  document.getElementById('roll-btn').style.display = 'none';
+  // Pre-roll everything
+  slotIcons = [rollOneIcon(), rollOneIcon(), rollOneIcon()];
+  slotBeats = [rollOneBeat(), rollOneBeat(), rollOneBeat()];
+
+  // But visually reveal them one by one
+  slotRevealedIcons = [false, false, false];
+  slotRevealedBeats = [false, false, false];
+
+  slotPhase = 'rolling-icons';
+  slotStep = 0;
+  slotTimer = BEAT * 1000;
+  slotRollAnim = 0;
+  phaseActive = false;
+  showingResults = false;
+
+  // Pre-calculate base values from icons (pre-rolled)
+  baseValues = { sword:0, shield:0, gold:0 };
+  tapValues = { sword:0, shield:0, gold:0 };
+  allPerfectSoFar = true;
+  isAllPerfect = false;
+
+  const isTriple = slotIcons[0]===slotIcons[1] && slotIcons[1]===slotIcons[2];
+  if(isTriple){
+    if(slotIcons[0]==='sword') baseValues.sword = 60;
+    else if(slotIcons[0]==='shield') baseValues.shield = 60;
+    else baseValues.gold = 6;
+  } else {
+    slotIcons.forEach(ic=>{
+      if(ic==='sword') baseValues.sword += 10;
+      else if(ic==='shield') baseValues.shield += 10;
+      else baseValues.gold += 1;
+    });
+  }
+
+  const label = document.getElementById('phase-label');
+  label.textContent = '🎰 ROLL';
+  label.style.color = '#ffaa00';
+  label.style.textShadow = '0 0 30px #ffaa0066';
+  label.style.opacity = 1;
+  setTimeout(()=>{ label.style.opacity = 0 }, 600);
+
+  document.getElementById('info').textContent = 'Rolling icons...';
+  document.getElementById('result-display').textContent = '';
+  document.getElementById('instructions').textContent = '';
+}
+
+let slotRevealedIcons = [false,false,false];
+let slotRevealedBeats = [false,false,false];
+
+function rollOneIcon(){ return ICONS[Math.floor(Math.random()*3)] }
+function rollOneBeat(){ return Math.random() < 0.5 ? 'F' : 'HH' }
+
+function updateSlots(dt){
+  if(slotPhase === 'idle') return;
+  slotRollAnim += dt * .006;
+  slotTimer -= dt;
+
+  if(slotPhase === 'rolling-icons'){
+    if(slotTimer <= 0){
+      slotRevealedIcons[slotStep] = true;
+      sfx.slotLand(slotIcons[slotStep]);
+      slotStep++;
+      if(slotStep >= 3){
+        slotPhase = 'rolling-beats';
+        slotStep = 0;
+        slotTimer = BEAT * 1000;
+        document.getElementById('info').textContent = 'Rolling beats...';
+      } else {
+        slotTimer = BEAT * 1000;
+      }
+    }
+  } else if(slotPhase === 'rolling-beats'){
+    if(slotTimer <= 0){
+      slotRevealedBeats[slotStep] = true;
+
+      // Play the ACTUAL rhythm sound for this beat slot
+      if(slotBeats[slotStep] === 'F'){
+        sfx.beatSlotF();
+      } else {
+        // HH: two quick hits — first now, second after half a beat
+        sfx.beatSlotHH();
+      }
+
+      slotStep++;
+      if(slotStep >= 3){
+        slotPhase = 'show-result';
+        slotTimer = 800;
+        const isTriple = slotIcons[0]===slotIcons[1] && slotIcons[1]===slotIcons[2];
+        if(isTriple) sfx.triple();
+
+        const icons = slotIcons.map(i=>ICON_SYMBOLS[i]).join(' ');
+        const beats = slotBeats.join(' ');
+        document.getElementById('info').textContent = `${icons}  ·  ${beats}`;
+        document.getElementById('instructions').textContent = 'Listen to the rhythm...';
+      } else {
+        slotTimer = BEAT * 1000;
+      }
+    }
+  } else if(slotPhase === 'show-result'){
+    if(slotTimer <= 0){
+      startGlyphPhase();
+    }
+  }
+}
+
+// ── Build Glyph from beat slots ──
+// Full rhythm = 1 init beat (count-in) + 3 F beats (icon slots) + beat slot results
+function buildRhythmFromSlots(){
+  const edges = [1, 1, 1, 1]; // 1 init + 3 icon slots = 4 full beats
+  for(let i=0;i<3;i++){
+    if(slotBeats[i] === 'F') edges.push(1);
+    else { edges.push(.5); edges.push(.5); }
+  }
+  return edges;
+}
+
+function buildGlyph(edgeMults, cx, cy, radius){
+  const n = edgeMults.length;
+  const numVerts = n + 1;
+
+  // Each edge's pixel length is proportional to its beat multiplier.
+  // F = unitLen, H = unitLen/2. Dot speed is constant.
+  const totalWeight = edgeMults.reduce((a,b)=>a+b, 0);
+  const hWeight = edgeMults.slice(INIT_EDGES).reduce((a,b)=>a+b, 0);
+
+  // Pick shape type — 6 variants
+  const shapeType = Math.floor(Math.random()*6);
+
+  // Base angle varies by shape — steeper = less horizontal span
+  const angles = [Math.PI/3, Math.PI/3, Math.PI/2.8, Math.PI/3.5, Math.PI/2.5, Math.PI/3];
+  const baseAngle = angles[shapeType];
+
+  // Target 96px per beat, scale down to fit screen width
+  const maxWidth = W() - 80;
+  // Estimate max horizontal span based on shape type
+  let hEstimate;
+  if(shapeType === 2){ // Snake — goes right then left, net ~half
+    hEstimate = hWeight * 0.6 * Math.cos(baseAngle);
+  } else if(shapeType === 4){ // Cascade — mostly vertical
+    hEstimate = hWeight * 0.3;
+  } else {
+    hEstimate = hWeight * Math.cos(baseAngle);
+  }
+  const maxUnit = hEstimate > 0 ? maxWidth / hEstimate : 96;
+  const unitLen = Math.min(96, maxUnit);
+
+  const verts = [];
+  let x = 0, y = 0;
+  verts.push({x, y});
+  const postInitCount = n - INIT_EDGES;
+
+  for(let i = 0; i < n; i++){
+    const len = edgeMults[i] * unitLen;
+
+    if(i < INIT_EDGES){
+      // Init edge — vertical line (straight down)
+      y += len;
+      verts.push({x, y});
+    } else {
+      const zi = i - INIT_EDGES; // index within playable edges
+      let hComp, vComp;
+
+      if(shapeType === 0){
+        // Zigzag steep down-first
+        const dir = (zi%2===0) ? 1 : -1;
+        hComp = len * Math.cos(baseAngle);
+        vComp = len * Math.sin(baseAngle) * dir;
+      }
+      else if(shapeType === 1){
+        // Zigzag steep up-first
+        const dir = (zi%2===0) ? -1 : 1;
+        hComp = len * Math.cos(baseAngle);
+        vComp = len * Math.sin(baseAngle) * dir;
+      }
+      else if(shapeType === 2){
+        // Snake — first half goes right, second half goes left
+        const halfPoint = Math.floor(postInitCount / 2);
+        const goingRight = zi < halfPoint;
+        const dir = (zi%2===0) ? 1 : -1;
+        hComp = len * Math.cos(baseAngle) * (goingRight ? 1 : -1);
+        vComp = len * Math.sin(baseAngle) * dir;
+      }
+      else if(shapeType === 3){
+        // Staircase — alternates steep/shallow angles
+        const steep = zi % 2 === 0;
+        const a = steep ? Math.PI/2.2 : Math.PI/5;
+        const dir = (Math.floor(zi/2)%2===0) ? 1 : -1;
+        hComp = len * Math.cos(a);
+        vComp = len * Math.sin(a) * dir;
+      }
+      else if(shapeType === 4){
+        // Cascade — mostly vertical, slight horizontal drift
+        const dir = (zi%2===0) ? 1 : -0.6;
+        hComp = len * 0.25;
+        vComp = len * 0.97 * dir;
+      }
+      else {
+        // Wave — gradual sine-like vertical oscillation
+        const phase = (zi / Math.max(1, postInitCount-1)) * Math.PI * 2;
+        const dir = Math.sin(phase);
+        hComp = len * Math.cos(baseAngle);
+        vComp = len * Math.sin(baseAngle) * dir;
+      }
+
+      x += hComp;
+      y += vComp;
+      verts.push({x, y});
+    }
+  }
+
+  // Center the shape on (cx, cy)
+  const xs = verts.map(v=>v.x), ys = verts.map(v=>v.y);
+  const offX = cx - (Math.min(...xs) + Math.max(...xs)) / 2;
+  const offY = cy - (Math.min(...ys) + Math.max(...ys)) / 2;
+  verts.forEach(v=>{ v.x += offX; v.y += offY; });
+
+  // Dot speed = unitLen pixels per BEAT seconds (constant for all edges)
+  // Edge duration = edgePixelLen / dotSpeed = (mult * unitLen) / (unitLen / BEAT) = mult * BEAT
+  const edges = [];
+  const durs = [];
+  for(let i=0;i<n;i++){
+    edges.push({from:i, to:i+1, beatMult:edgeMults[i]});
+    durs.push(edgeMults[i] * BEAT);
+  }
+  return {verts, edges, durs};
+}
+
+function startGlyphPhase(){
+  slotPhase = 'playing';
+
+  // Build glyph from slot results
+  const cx = W()/2, cy = H()*0.58;
+  const radius = Math.min(W(),H()) * 0.15;
+  const edgeMults = buildRhythmFromSlots();
+  const g = buildGlyph(edgeMults, cx, cy, radius);
+  glyphVerts = g.verts;
+  glyphEdges = g.edges;
+  edgeDurs = g.durs;
+  totalInts = g.verts.length;
+
+  dotSeg = 0;
+  dotProg = 0;
+  intHits = new Array(totalInts).fill(false);
+  intHits[0] = true; // init vertex not tappable
+  turnResults = [];
+  phaseActive = true;
+
+  // Reset tap values for this play (base values already set from slot roll)
+  tapValues = { sword:0, shield:0, gold:0 };
+  allPerfectSoFar = true;
+  isAllPerfect = false;
+
+  const label = document.getElementById('phase-label');
+  label.textContent = '⚔ PLAY';
+  label.style.color = '#00ffaa';
+  label.style.textShadow = '0 0 30px #00ffaa66';
+  label.style.opacity = 1;
+  setTimeout(()=>{ label.style.opacity = 0 }, 500);
+
+  const iconBeats = edgeMults.slice(INIT_EDGES, INIT_EDGES+3).map(m => m<=.5?'H':'F').join(' ');
+  const slotRhythm = edgeMults.slice(INIT_EDGES+3).map(m => m<=.5?'H':'F').join(' ');
+  document.getElementById('info').textContent = `[ ${iconBeats} · ${slotRhythm} ]`;
+  document.getElementById('instructions').textContent = 'SPACE / TAP at intersections!';
+}
+
+// ── Dot & Hit ──
+function getDotPos(){
+  const e = glyphEdges[dotSeg];
+  const f = glyphVerts[e.from], t = glyphVerts[e.to];
+  return { x: f.x+(t.x-f.x)*dotProg, y: f.y+(t.y-f.y)*dotProg };
+}
+
+function evalHit(){
+  const durMs = edgeDurs[dotSeg]*1000;
+  const tEnd = (1-dotProg)*durMs;
+  const tStart = dotProg*durMs;
+  const nearEnd = tEnd < tStart;
+  const td = Math.min(tEnd,tStart);
+  if(td<55) return {rating:'PERFECT',nearEnd};
+  if(td<120) return {rating:'GREAT',nearEnd};
+  if(td<200) return {rating:'COOL',nearEnd};
+  return {rating:'MISS',nearEnd};
+}
+
+function handleHit(){
+  if(!phaseActive||showingResults) return;
+  const r = evalHit();
+  if(r.rating!=='MISS'){
+    const idx = r.nearEnd ? glyphEdges[dotSeg].to : glyphEdges[dotSeg].from;
+    if(idx < INIT_EDGES) return; // init vertex, not tappable
+    if(!intHits[idx]){
+      intHits[idx]=true;
+      turnResults.push(r.rating);
+      showFB(r.rating);
+      spawnParticles(glyphVerts[idx].x, glyphVerts[idx].y, r.rating);
+      applyTapBonus(idx, r.rating);
+      if(r.rating !== 'PERFECT') allPerfectSoFar = false;
+    } else { showFB('MISS'); sfx.miss(); }
+  } else {
+    showFB('MISS'); turnResults.push('MISS');
+    allPerfectSoFar = false;
+  }
+}
+
+function applyTapBonus(vertIdx, rating){
+  // Icon dots: vertices INIT_EDGES to INIT_EDGES+2
+  if(vertIdx >= INIT_EDGES && vertIdx < INIT_EDGES + 3){
+    const iconIdx = vertIdx - INIT_EDGES;
+    const icon = slotIcons[iconIdx];
+    const bonuses = {
+      sword: { PERFECT:10, GREAT:5, COOL:2 },
+      shield: { PERFECT:10, GREAT:5, COOL:2 },
+      gold: { PERFECT:3, GREAT:2, COOL:1 }
+    };
+    tapValues[icon] += bonuses[icon][rating];
+  }
+  // Beat dots: vertices INIT_EDGES+3 onwards — add to ALL
+  else if(vertIdx >= INIT_EDGES + 3){
+    const allBonus = { PERFECT:3, GREAT:2, COOL:1 };
+    const val = allBonus[rating];
+    tapValues.sword += val;
+    tapValues.shield += val;
+    tapValues.gold += val;
+  }
+}
+
+function showFB(r){
+  const fb=document.getElementById('hit-fb');
+  const c={PERFECT:'#00ffaa',GREAT:'#44aaff',COOL:'#ffaa00',MISS:'#ff3366'};
+  fb.textContent=r; fb.style.color=c[r];
+  fb.style.textShadow=`0 0 20px ${c[r]}88`;
+  fb.style.opacity=1; fb.style.transform='translate(-50%,-50%) scale(1.3)';
+  setTimeout(()=>{fb.style.opacity=0;fb.style.transform='translate(-50%,-50%) scale(1)'},300);
+  sfx[r.toLowerCase()] && sfx[r.toLowerCase()]();
+}
+
+function spawnParticles(x,y,rating){
+  const c={PERFECT:'#00ffaa',GREAT:'#44aaff',COOL:'#ffaa00',MISS:'#ff3366'};
+  const n=rating==='PERFECT'?18:rating==='GREAT'?12:6;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, s=Math.random()*3+1;
+    particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,decay:.015+Math.random()*.015,color:c[rating],size:Math.random()*4+2});
+  }
+}
+
+// ── Finish Playing Phase ──
+// Result animation state
+let resultQueue = []; // [{type, value, icon, color}]
+let resultIdx = -1;
+let resultSubPhase = ''; // 'show' or 'apply'
+let resultTimer = 0;
+let resultFinals = { sword:0, shield:0, gold:0 };
+let resultAnimActive = false;
+
+function finishPlaying(){
+  phaseActive = false;
+  showingResults = true;
+
+  // Check all perfect
+  const tappable = totalInts - INIT_EDGES;
+  const tapped = turnResults.filter(r=>r!=='MISS').length;
+  if(tapped < tappable) allPerfectSoFar = false;
+  isAllPerfect = allPerfectSoFar;
+
+  // Calculate final values: (base + tap) × multiplier
+  const mult = isAllPerfect ? 1.5 : 1;
+  resultFinals.sword = Math.round((baseValues.sword + tapValues.sword) * mult);
+  resultFinals.shield = Math.round((baseValues.shield + tapValues.shield) * mult);
+  resultFinals.gold = Math.round((baseValues.gold + tapValues.gold) * mult);
+
+  // Build result queue — only include non-zero values
+  resultQueue = [];
+  if(isAllPerfect){
+    resultQueue.push({ type:'perfect', value:0, icon:'✨', label:'ALL PERFECT ×1.5', color:'#ffaa00' });
+  }
+  if(resultFinals.sword > 0)
+    resultQueue.push({ type:'sword', value:resultFinals.sword, icon:'⚔', label:`${resultFinals.sword} DAMAGE`, color:ICON_COLORS.sword });
+  if(resultFinals.shield > 0)
+    resultQueue.push({ type:'shield', value:resultFinals.shield, icon:'🛡', label:`+${resultFinals.shield} SHIELD`, color:ICON_COLORS.shield });
+  if(resultFinals.gold > 0)
+    resultQueue.push({ type:'gold', value:resultFinals.gold, icon:'💰', label:`+${resultFinals.gold} GOLD`, color:ICON_COLORS.gold });
+
+  document.getElementById('result-display').textContent = '';
+  document.getElementById('info').textContent = '';
+
+  if(resultQueue.length === 0){
+    // Nothing to show, go to enemy turn
+    finishResultAnim();
+    return;
+  }
+
+  // Start animation
+  resultIdx = 0;
+  resultSubPhase = 'show';
+  resultTimer = BEAT * 1000;
+  resultAnimActive = true;
+
+  // Play sound for first item
+  playResultSound(resultQueue[0]);
+}
+
+function playResultSound(item){
+  if(item.type === 'perfect') sfx.triple();
+  else if(item.type === 'sword') playMP3('sword');
+  else if(item.type === 'shield') playMP3('shield');
+  else if(item.type === 'gold') playMP3('coin');
+}
+
+function applyResultItem(item){
+  if(item.type === 'sword'){
+    enemyHP = Math.max(0, enemyHP - item.value);
+    shake = Math.min(item.value/6, 12);
+    updateUI();
+  } else if(item.type === 'shield'){
+    playerShield += item.value;
+    updateUI();
+  } else if(item.type === 'gold'){
+    gold += item.value;
+    updateUI();
+  }
+  // 'perfect' type has no apply effect — just visual
+}
+
+function updateResultAnim(dt){
+  if(!resultAnimActive) return;
+  resultTimer -= dt;
+  if(resultTimer > 0) return;
+
+  if(resultSubPhase === 'show'){
+    // Apply the effect now
+    applyResultItem(resultQueue[resultIdx]);
+    resultSubPhase = 'apply';
+    resultTimer = BEAT * 1000;
+    playResultSound(resultQueue[resultIdx]);
+  } else {
+    // Move to next item
+    resultIdx++;
+    if(resultIdx >= resultQueue.length){
+      finishResultAnim();
+    } else {
+      resultSubPhase = 'show';
+      resultTimer = BEAT * 1000;
+      playResultSound(resultQueue[resultIdx]);
+    }
+  }
+}
+
+function finishResultAnim(){
+  resultAnimActive = false;
+  showingResults = false;
+
+  if(enemyHP <= 0){
+    setTimeout(()=>advanceEnemy(), 800);
+    return;
+  }
+  // Enemy turn
+  setTimeout(()=>enemyTurn(), 400);
+}
+
+function drawResultAnim(){
+  if(!resultAnimActive || resultIdx < 0 || resultIdx >= resultQueue.length) return;
+
+  const item = resultQueue[resultIdx];
+  const cx = W()/2;
+  const cy = H()/2;
+
+  // Background dim
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(0, cy - 50, W(), 100);
+
+  // Icon
+  ctx.font = '42px serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(item.icon, cx, cy - 8);
+
+  // Label
+  ctx.font = '18px Orbitron';
+  ctx.fillStyle = item.color;
+  ctx.textShadow = `0 0 20px ${item.color}`;
+  ctx.fillText(item.label, cx, cy + 30);
+
+  // Show apply feedback — flash when applying
+  if(resultSubPhase === 'apply'){
+    const flash = Math.sin(glow * 15) * 0.3 + 0.7;
+    ctx.globalAlpha = flash;
+    ctx.beginPath(); ctx.arc(cx, cy, 55, 0, Math.PI*2);
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 55);
+    g.addColorStop(0, item.color + '33');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g; ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ── Enemy Turn ──
+let enemyTurnPhase = ''; // 'attack' or 'react'
+let enemyTurnTimer = 0;
+let enemyTurnActive = false;
+let enemyTurnAbsorbed = 0;
+let enemyTurnDmg = 0;
+
+function enemyTurn(){
+  showingResults = false;
+  slotPhase = 'enemy-turn';
+
+  document.getElementById('result-display').textContent = '';
+  document.getElementById('info').textContent = '';
+
+  // Pre-calculate damage
+  enemyTurnDmg = ENEMY_DMG;
+  enemyTurnAbsorbed = 0;
+  if(playerShield > 0){
+    enemyTurnAbsorbed = Math.min(playerShield, enemyTurnDmg);
+    enemyTurnDmg -= enemyTurnAbsorbed;
+  }
+
+  // Beat 1: show attack
+  enemyTurnPhase = 'attack';
+  enemyTurnTimer = BEAT * 1000;
+  enemyTurnActive = true;
+  sfx.enemyHit();
+}
+
+function updateEnemyTurn(dt){
+  if(!enemyTurnActive) return;
+  enemyTurnTimer -= dt;
+  if(enemyTurnTimer > 0) return;
+
+  if(enemyTurnPhase === 'attack'){
+    // Beat 2: apply damage
+    enemyTurnPhase = 'react';
+    enemyTurnTimer = BEAT * 1000;
+
+    // Apply damage
+    if(enemyTurnAbsorbed > 0) playerShield -= enemyTurnAbsorbed;
+    if(enemyTurnDmg > 0){
+      playerHP = Math.max(0, playerHP - enemyTurnDmg);
+      shake = 6;
+    }
+    sfx.enemyHit();
+    updateUI();
+  } else {
+    // Done
+    enemyTurnActive = false;
+
+    if(playerHP <= 0){
+      setTimeout(()=>endGame(), 600);
+      return;
+    }
+
+    setTimeout(()=>showRollButton(), 300);
+  }
+}
+
+function drawEnemyTurn(){
+  if(!enemyTurnActive) return;
+
+  const cx = W()/2, cy = H()/2;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(0, cy - 50, W(), 100);
+
+  if(enemyTurnPhase === 'attack'){
+    // Show attack icon + value
+    ctx.font = '42px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('💀', cx, cy - 8);
+
+    ctx.font = '18px Orbitron';
+    ctx.fillStyle = '#ff3366';
+    ctx.fillText(`ATK ${ENEMY_DMG}`, cx, cy + 30);
+  } else {
+    // Show reaction — what happened
+    ctx.font = '42px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+    if(enemyTurnAbsorbed > 0 && enemyTurnDmg > 0){
+      ctx.fillStyle = '#fff';
+      ctx.fillText('🛡💔', cx, cy - 8);
+      ctx.font = '15px Orbitron';
+      ctx.fillStyle = '#ff6666';
+      ctx.fillText(`Shield -${enemyTurnAbsorbed}  HP -${enemyTurnDmg}`, cx, cy + 30);
+    } else if(enemyTurnAbsorbed > 0){
+      ctx.fillStyle = '#fff';
+      ctx.fillText('🛡', cx, cy - 8);
+      ctx.font = '16px Orbitron';
+      ctx.fillStyle = '#4488ff';
+      ctx.fillText(`Shield absorbed ${enemyTurnAbsorbed}!`, cx, cy + 30);
+    } else {
+      ctx.fillStyle = '#fff';
+      ctx.fillText('💔', cx, cy - 8);
+      ctx.font = '16px Orbitron';
+      ctx.fillStyle = '#ff3366';
+      ctx.fillText(`-${enemyTurnDmg} HP`, cx, cy + 30);
+    }
+
+    // Flash
+    const flash = Math.sin(glow * 15) * 0.3 + 0.7;
+    ctx.globalAlpha = flash;
+    ctx.beginPath(); ctx.arc(cx, cy, 55, 0, Math.PI*2);
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 55);
+    g.addColorStop(0, 'rgba(255,51,102,0.15)');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g; ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ── Enemy Progression ──
+function advanceEnemy(){
+  enemyNum++;
+  enemyMaxHP = BASE_ENEMY_HP + (enemyNum-1)*100;
+  enemyHP = enemyMaxHP;
+  playerHP = PLAYER_MAX_HP;
+  playerShield = 0;
+  updateUI();
+
+  document.getElementById('e-label').textContent = `ENEMY ${enemyNum}`;
+  document.getElementById('result-display').textContent = '';
+
+  sfx.nextEnemy();
+  const label = document.getElementById('phase-label');
+  label.textContent = `ENEMY ${enemyNum}`;
+  label.style.color = '#ff3366';
+  label.style.textShadow = '0 0 30px #ff336666';
+  label.style.opacity = 1;
+  document.getElementById('info').textContent = `HP: ${enemyMaxHP}`;
+
+  setTimeout(()=>{
+    label.style.opacity = 0;
+    setTimeout(()=>showRollButton(), 500);
+  }, 1500);
+}
+
+function endGame(){
+  document.getElementById('roll-btn').style.display='none';
+  const s = document.getElementById('gameover-screen');
+  s.style.display='flex';
+  document.getElementById('go-title').textContent='DEFEATED';
+  document.getElementById('go-title').style.color='#ff3366';
+  document.getElementById('go-title').style.textShadow='0 0 40px #ff336666';
+  document.getElementById('go-sub').textContent=`Fell at enemy ${enemyNum}. Gold: ${gold}. Enemies defeated: ${enemyNum-1}`;
+  sfx.defeat();
+  phaseActive=false; slotPhase='idle';
+}
+
+function resetGame(){
+  playerHP=PLAYER_MAX_HP; playerShield=0; gold=0;
+  enemyNum=1; enemyMaxHP=BASE_ENEMY_HP; enemyHP=BASE_ENEMY_HP;
+  slotPhase='idle'; phaseActive=false; showingResults=false;
+  paused=false; document.getElementById('pause-screen').style.display='none';
+  document.getElementById('pause-btn').textContent='⏸';
+  particles=[]; shake=0;
+  updateUI();
+  document.getElementById('gameover-screen').style.display='none';
+  document.getElementById('result-display').textContent='';
+  document.getElementById('e-label').textContent='ENEMY 1';
+  showRollButton();
+}
+
+function updateUI(){
+  document.getElementById('p-hp-fill').style.width=(playerHP/PLAYER_MAX_HP*100)+'%';
+  document.getElementById('p-hp-txt').textContent=`HP ${playerHP}/${PLAYER_MAX_HP}`;
+  const maxShieldDisplay = 100;
+  document.getElementById('p-shield-fill').style.width=Math.min(100,playerShield/maxShieldDisplay*100)+'%';
+  document.getElementById('p-shield-txt').textContent=playerShield>0?`🛡 ${playerShield}`:'';
+  document.getElementById('e-hp-fill').style.width=(enemyHP/enemyMaxHP*100)+'%';
+  document.getElementById('e-hp-txt').textContent=`${enemyHP}/${enemyMaxHP}`;
+  document.getElementById('gold-display').textContent=`💰 ${gold}`;
+}
+
+// ── Input ──
+function togglePause(){
+  if(slotPhase==='idle') return; // don't pause on start/gameover screens
+  paused = !paused;
+  document.getElementById('pause-screen').style.display = paused ? 'flex' : 'none';
+  document.getElementById('pause-btn').textContent = paused ? '▶' : '⏸';
+}
+
+addEventListener('keydown',e=>{
+  if(e.code==='Escape'){ e.preventDefault(); togglePause(); return; }
+  if(paused) return;
+  if(e.code==='Space'){e.preventDefault();handleHit()}
+});
+canvas.addEventListener('pointerdown',()=>{ if(!paused) handleHit() });
+document.getElementById('pause-btn').addEventListener('click', togglePause);
+document.getElementById('resume-btn').addEventListener('click', togglePause);
+document.getElementById('start-btn').addEventListener('click',()=>{
+  ensureAC();
+  document.getElementById('start-screen').style.display='none';
+  showRollButton();
+});
+document.getElementById('restart-btn').addEventListener('click',resetGame);
+document.getElementById('roll-btn').addEventListener('click',()=>{
+  ensureAC();
+  startSlotPhase();
+});
+
+// ── Drawing ──
+function drawBG(){
+  const g=ctx.createRadialGradient(W()/2,H()/2,0,W()/2,H()/2,W()*.7);
+  g.addColorStop(0,'#12121a');g.addColorStop(1,'#08080c');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W(),H());
+  bgP.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=1;if(p.x>1)p.x=0;if(p.y<0)p.y=1;if(p.y>1)p.y=0;
+    ctx.beginPath();ctx.arc(p.x*W(),p.y*H(),p.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(100,140,180,${p.a})`;ctx.fill();
+  });
+}
+
+function drawSlots(){
+  if(slotPhase==='idle') return;
+
+  const cx=W()/2, sy=H()*0.28;
+  const slotW=70, slotH=80, gap=16;
+  const totalW = slotW*3 + gap*2;
+  const startX = cx - totalW/2;
+
+  // Draw icon slots
+  for(let i=0;i<3;i++){
+    const x = startX + i*(slotW+gap);
+    const y = sy - slotH/2;
+    const revealed = slotRevealedIcons[i];
+
+    ctx.strokeStyle = revealed ? ICON_COLORS[slotIcons[i]]+'88' : '#ffffff22';
+    ctx.lineWidth = revealed ? 2 : 1;
+    ctx.strokeRect(x, y, slotW, slotH);
+
+    ctx.fillStyle = revealed ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.3)';
+    ctx.fillRect(x, y, slotW, slotH);
+
+    if(revealed){
+      ctx.font = '32px serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(ICON_SYMBOLS[slotIcons[i]], x+slotW/2, y+slotH/2);
+    } else if(slotPhase==='rolling-icons' && i===slotStep){
+      const spinIcon = ICONS[Math.floor(slotRollAnim*8)%3];
+      ctx.font = '32px serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = '#fff';
+      ctx.fillText(ICON_SYMBOLS[spinIcon], x+slotW/2, y+slotH/2);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Draw beat slots below
+  const by = sy + slotH/2 + 20;
+  const bSlotH = 36;
+  for(let i=0;i<3;i++){
+    const x = startX + i*(slotW+gap);
+    const y = by;
+    const revealed = slotRevealedBeats[i];
+
+    ctx.strokeStyle = revealed ? '#ffaa0044' : '#ffffff11';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, slotW, bSlotH);
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(x, y, slotW, bSlotH);
+
+    if(revealed){
+      ctx.font = '14px Orbitron';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = slotBeats[i]==='F' ? '#ffaa00' : '#ff6644';
+      ctx.fillText(slotBeats[i], x+slotW/2, y+bSlotH/2);
+    } else if(slotPhase==='rolling-beats' && i===slotStep){
+      const spinB = Math.floor(slotRollAnim*10)%2===0 ? 'F' : 'HH';
+      ctx.font = '14px Orbitron';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#ffaa00';
+      ctx.fillText(spinB, x+slotW/2, y+bSlotH/2);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Connector lines from icon to beat slot
+  for(let i=0;i<3;i++){
+    if(slotIcons[i] && slotBeats[i]){
+      const x = startX + i*(slotW+gap) + slotW/2;
+      ctx.strokeStyle = '#ffffff0a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, sy+slotH/2);
+      ctx.lineTo(x, by);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawIndicators(){
+  // Always show during active gameplay
+  if(slotPhase === 'idle') return;
+
+  const cx = W()/2;
+  const y = H()*0.42;
+
+  // Always show all 3 icons — values start at 0, update when slots land
+  const entries = [
+    { icon:'⚔', base:baseValues.sword, tap:tapValues.sword, color:ICON_COLORS.sword },
+    { icon:'🛡', base:baseValues.shield, tap:tapValues.shield, color:ICON_COLORS.shield },
+    { icon:'💰', base:baseValues.gold, tap:tapValues.gold, color:ICON_COLORS.gold },
+  ];
+
+  const gap = Math.min(140, W()*0.35);
+  const startX = cx - (entries.length - 1) * gap / 2;
+
+  entries.forEach((e, i)=>{
+    const x = startX + i * gap;
+    const hasValue = e.base > 0 || e.tap > 0;
+
+    // Icon
+    ctx.font = '22px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.globalAlpha = hasValue ? 1 : 0.3;
+    ctx.fillStyle = '#fff';
+    ctx.fillText(e.icon, x - 45, y);
+
+    // Base value
+    ctx.font = '16px Orbitron';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = hasValue ? e.color + 'cc' : '#ffffff22';
+    ctx.fillText(`${e.base}`, x - 28, y);
+
+    // + tap value
+    ctx.font = '14px Orbitron';
+    ctx.fillStyle = e.tap > 0 ? '#00ffaacc' : '#ffffff22';
+    ctx.fillText(`+${e.tap}`, x + 2, y);
+    ctx.globalAlpha = 1;
+
+    // x1.5 multiplier (show during results if all perfect)
+    if(isAllPerfect && showingResults){
+      ctx.fillStyle = '#ffaa00';
+      ctx.font = '12px Orbitron';
+      ctx.fillText('×1.5', x + 30, y);
+
+      ctx.beginPath(); ctx.arc(x, y, 35, 0, Math.PI*2);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, 35);
+      g.addColorStop(0, 'rgba(255,170,0,0.1)');
+      g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g; ctx.fill();
+    }
+  });
+}
+
+function drawGlyph(){
+  if(slotPhase!=='playing' || (!phaseActive && !showingResults)) return;
+
+  const col = '#00ffaa';
+  const dim = 'rgba(0,255,170,0.15)';
+  const mid = 'rgba(0,255,170,0.4)';
+
+  // Edges
+  glyphEdges.forEach((edge,ei)=>{
+    const f=glyphVerts[edge.from], t=glyphVerts[edge.to];
+    const isInit = ei < INIT_EDGES;
+    ctx.strokeStyle = isInit ? 'rgba(255,255,255,0.06)' : dim;
+    ctx.lineWidth=12;
+    ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(t.x,t.y);ctx.stroke();
+    const lw = edge.beatMult<=.5 ? 1.5 : 3;
+    ctx.strokeStyle = isInit ? 'rgba(255,255,255,0.15)' : mid;
+    ctx.lineWidth=lw;
+    ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(t.x,t.y);ctx.stroke();
+
+    if(edge.beatMult<=.5){
+      const mx=(f.x+t.x)/2, my=(f.y+t.y)/2;
+      ctx.font='9px Orbitron';ctx.fillStyle=col+'44';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('H',mx,my);
+    }
+  });
+
+  // Vertices — circles scale down to dot size at perfect timing
+  const maxR = 16;
+  const minR = 10; // matches dot core size
+  const animWindow = BEAT * 1000; // shrink over 1 beat approach
+
+  glyphVerts.forEach((v,i)=>{
+    const hit = intHits[i];
+    const isInit = i < INIT_EDGES;
+
+    // Calculate time distance to this vertex for shrink animation
+    let timeDist = Infinity;
+    if(phaseActive && !hit && !isInit){
+      if(dotSeg < glyphEdges.length){
+        if(i === glyphEdges[dotSeg].from){
+          timeDist = dotProg * edgeDurs[dotSeg] * 1000;
+        } else if(i === glyphEdges[dotSeg].to){
+          timeDist = (1 - dotProg) * edgeDurs[dotSeg] * 1000;
+        }
+        // Also check next edge's end vertex for upcoming awareness
+        else if(dotSeg + 1 < glyphEdges.length && i === glyphEdges[dotSeg+1].to){
+          const timeToEndOfCurrent = (1 - dotProg) * edgeDurs[dotSeg] * 1000;
+          timeDist = timeToEndOfCurrent + edgeDurs[dotSeg+1] * 1000;
+        }
+      }
+    }
+
+    // Scale radius: far = maxR, at vertex = minR
+    let r;
+    if(timeDist <= animWindow && timeDist !== Infinity){
+      const t = Math.max(0, timeDist / animWindow);
+      r = minR + (maxR - minR) * t;
+    } else {
+      r = hit ? maxR * 0.8 : maxR;
+    }
+
+    // Outer glow
+    ctx.beginPath();ctx.arc(v.x,v.y,r+6,0,Math.PI*2);
+    ctx.fillStyle = hit ? 'rgba(255,255,255,0.08)' : col+'11';ctx.fill();
+
+    // Main circle
+    ctx.beginPath();ctx.arc(v.x,v.y,r,0,Math.PI*2);
+    if(isInit){
+      ctx.strokeStyle = '#ffffff33';
+      ctx.lineWidth = 1.5;
+    } else {
+      // Brighter stroke as circle shrinks (approaching perfect)
+      const proximity = timeDist <= animWindow ? 1 - timeDist/animWindow : 0;
+      const alpha = hit ? '44' : proximity > 0.5 ? 'ff' : proximity > 0 ? 'bb' : '';
+      ctx.strokeStyle = hit ? '#ffffff44' : (alpha ? '#ffffff' + alpha : col);
+      ctx.lineWidth = hit ? 2.5 : 2 + proximity * 2;
+    }
+    ctx.stroke();
+
+    if(isInit){
+      ctx.save(); ctx.translate(v.x, v.y);
+      ctx.fillStyle = '#ffffff44';
+      ctx.beginPath();
+      ctx.moveTo(-4,-5); ctx.lineTo(6,0); ctx.lineTo(-4,5); ctx.closePath();
+      ctx.fill(); ctx.restore();
+    } else if(hit){
+      ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fill();
+      ctx.strokeStyle='#ffffff88';ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(v.x-5,v.y);ctx.lineTo(v.x-1,v.y+4);ctx.lineTo(v.x+6,v.y-4);
+      ctx.stroke();
+    }
+  });
+
+  // Dot
+  if(phaseActive){
+    const p = getDotPos();
+    ctx.beginPath();ctx.arc(p.x,p.y,22,0,Math.PI*2);
+    const tg=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,22);
+    tg.addColorStop(0,'rgba(0,255,170,0.5)');tg.addColorStop(1,'transparent');
+    ctx.fillStyle=tg;ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y,6,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+  }
+}
+
+function drawEnemy(){
+  const cx=W()/2,cy=H()*0.13;
+  const pulse=Math.sin(glow*2)*3;
+  const sz=25+pulse;
+  const hpR=enemyHP/enemyMaxHP;
+
+  ctx.save();ctx.translate(cx,cy);
+  ctx.beginPath();ctx.arc(0,0,sz+15,0,Math.PI*2);
+  const g=ctx.createRadialGradient(0,0,sz,0,0,sz+15);
+  g.addColorStop(0,`rgba(255,51,102,${.2*hpR})`);g.addColorStop(1,'transparent');
+  ctx.fillStyle=g;ctx.fill();
+
+  ctx.beginPath();ctx.arc(0,-4,sz*.8,0,Math.PI*2);
+  ctx.fillStyle='rgba(40,15,25,.9)';ctx.fill();
+  ctx.strokeStyle=`rgba(255,51,102,${.4+.3*hpR})`;ctx.lineWidth=2;ctx.stroke();
+
+  const ey=.5+Math.sin(glow*4)*.2;
+  ctx.fillStyle=`rgba(255,51,102,${ey})`;
+  ctx.beginPath();ctx.arc(-8,-6,4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(8,-6,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(-8,-6,1.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(8,-6,1.5,0,Math.PI*2);ctx.fill();
+
+  if(enemyNum>1){
+    ctx.font='9px Orbitron';ctx.fillStyle='#ff336688';
+    ctx.textAlign='center';ctx.fillText(`LV ${enemyNum}`,0,sz*.8+14);
+  }
+  ctx.restore();
+}
+
+function drawPlayer(){
+  const cx=W()/2,cy=H()*.83;
+  const pulse=Math.sin(glow*2.5)*2;
+  ctx.save();ctx.translate(cx,cy);
+  ctx.beginPath();ctx.arc(0,0,30,0,Math.PI*2);
+  const g=ctx.createRadialGradient(0,0,10,0,0,30);
+  g.addColorStop(0,'rgba(0,255,170,.15)');g.addColorStop(1,'transparent');
+  ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle='#00ffaa88';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(0,-12,8+pulse*.3,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0,-4);ctx.lineTo(0,10);
+  ctx.moveTo(-10,2);ctx.lineTo(10,2);
+  ctx.moveTo(0,10);ctx.lineTo(-8,20);
+  ctx.moveTo(0,10);ctx.lineTo(8,20);
+  ctx.stroke();ctx.restore();
+}
+
+function drawParticles(){
+  particles=particles.filter(p=>p.life>0);
+  particles.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life-=p.decay;
+    ctx.beginPath();ctx.arc(p.x,p.y,Math.max(0,p.size*p.life),0,Math.PI*2);
+    const a=Math.max(0,Math.min(255,Math.floor(p.life*255)));
+    ctx.fillStyle=p.color+a.toString(16).padStart(2,'0');ctx.fill();
+  });
+}
+
+// ── Main Loop ──
+function update(ts){
+  const dt = ts - lastTime;
+  lastTime = ts;
+  glow += dt*.001;
+
+  if(!paused){
+    // Slot machine update
+    updateSlots(dt);
+
+    // Dot movement
+    if(phaseActive && edgeDurs.length>0){
+      const dur = edgeDurs[dotSeg];
+      dotProg += (1/dur)*(dt/1000);
+      if(dotProg >= 1){
+        dotProg -= 1;
+        dotSeg++;
+        // Play sound matching the vertex crossed
+        if(dotSeg >= INIT_EDGES && dotSeg < INIT_EDGES + 3){
+          sfx.slotLand(slotIcons[dotSeg - INIT_EDGES]);
+        } else {
+          sfx.tick();
+        }
+        if(dotSeg >= glyphEdges.length){
+          dotSeg = glyphEdges.length-1;
+          dotProg = 1;
+          for(let i=0;i<totalInts;i++){
+            if(!intHits[i]) turnResults.push('MISS');
+          }
+          finishPlaying();
+        }
+      }
+    }
+
+    // Result animation
+    updateResultAnim(dt);
+
+    // Enemy turn animation
+    updateEnemyTurn(dt);
+
+    shake *= .9;
+    if(shake<.1) shake=0;
+  }
+
+  ctx.save();
+  if(shake>0) ctx.translate((Math.random()-.5)*shake*2,(Math.random()-.5)*shake*2);
+
+  drawBG();
+  drawEnemy();
+  drawPlayer();
+  drawSlots();
+  drawIndicators();
+  drawGlyph();
+  drawParticles();
+
+  ctx.restore();
+  drawResultAnim();
+  drawEnemyTurn();
+  requestAnimationFrame(update);
+}
+requestAnimationFrame(update);
+</script>
+</body>
+</html>
