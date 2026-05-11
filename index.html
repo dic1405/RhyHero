@@ -22,7 +22,7 @@ canvas{display:block;width:100%;height:100%}
 #e-hp-fill{background:linear-gradient(90deg,#ff3366,#cc2255);width:100%}
 #e-hp-txt{font:9px 'Orbitron',monospace;color:#ff3366;text-shadow:0 0 8px #ff336666;margin-bottom:1px}
 #e-atk{font:8px 'Orbitron',monospace;color:#ff336666;letter-spacing:1px}
-#player-section{position:absolute;bottom:1.5%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:300px;pointer-events:none}
+#player-section{position:absolute;top:76%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:300px;pointer-events:none}
 #p-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;padding:0 4px}
 #p-hp-txt{font:10px 'Orbitron',monospace;color:#00ffaa;text-shadow:0 0 8px #00ffaa66}
 #gold-display{font:10px 'Orbitron',monospace;color:#ffaa00;text-shadow:0 0 8px #ffaa0044}
@@ -123,11 +123,11 @@ async function loadAudio(name, file){
   }catch(e){ console.warn('Audio load failed:', name, e); }
 }
 
-function play(name, vol=1){
+function play(name, vol=1, pitch=1){
   ensureAC();
   const b = audioBuffers[name]; if(!b) return;
   const s=ac.createBufferSource(), g=ac.createGain();
-  s.buffer=b; g.gain.value=vol;
+  s.buffer=b; g.gain.value=vol; s.playbackRate.value=pitch;
   s.connect(g); g.connect(ac.destination); s.start(0);
 }
 
@@ -141,7 +141,7 @@ const sfx = {
   tick(){ play('snare',0.5) },
   miss(){ tone(150,.2,.1,'sawtooth') },
   enemyHit(){ tone(100,.3,.15,'sawtooth') },
-  triple(){ [0,60,120,180].forEach((d,i)=>setTimeout(()=>tone(800+i*200,.12,.12),d)) },
+  triple(streak=0){ const p=Math.pow(2,(streak*2)/12); [0,60,120,180].forEach((d,i)=>setTimeout(()=>tone((800+i*200)*p,.12,.12),d)) },
   nextEnemy(){ tone(600,.15,.12); setTimeout(()=>tone(800,.15,.12),120); setTimeout(()=>tone(1000,.2,.1),240) },
   defeat(){ [0,150,300].forEach((d,i)=>setTimeout(()=>tone(300-i*80,.4,.12,'sawtooth'),d)) },
 };
@@ -159,7 +159,10 @@ function drawIcon(name, cx, cy, size){
 }
 
 // ── Constants ──
-const BEAT = 60/85;
+const BASE_BPM = 85;
+let currentBPM = BASE_BPM;
+let BEAT = 60/BASE_BPM;
+function updateTempo(){ currentBPM=BASE_BPM+Math.floor((enemyNum-1)/2)*10; BEAT=60/currentBPM; }
 const PLAYER_MAX_HP = 300;
 const BASE_ENEMY_HP = 100;
 const BASE_ENEMY_DMG = 50;
@@ -307,7 +310,7 @@ function updateSlots(dt){
         slotRevealedIcons[ev.slot]=true;
         sfx.slotLand(slotIcons[ev.slot]);
         slotBeatLines[ev.slot]=1; slotBeatFlash[ev.slot]=300;
-      } else if(ev.action==='init'){ play('slot');
+      } else if(ev.action==='init'){ play('slot',1,Math.pow(2,streakCount*2/12));
       } else if(ev.action==='snare'){
         sfx.tick();
         if(ev.slot>=0){ slotBeatLines[ev.slot]=2; slotBeatFlash[ev.slot]=300; }
@@ -422,7 +425,7 @@ function startGlyphPhase(){
     slotIcons.forEach(ic=>{ baseValues[ic]+=(ic==='gold'?1:10); });
   }
 
-  play('slot');
+  play('slot',1,Math.pow(2,streakCount*2/12));
 }
 
 // ── Hit Detection ──
@@ -485,12 +488,12 @@ function applyTap(vi, rating){
     const b={sword:{PERFECT:20,GREAT:15,COOL:12},shield:{PERFECT:15,GREAT:12,COOL:11},gold:{PERFECT:5,GREAT:2,COOL:1}};
     const val=b[icon][rating]; tapValues[icon]+=val;
     if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); shake=Math.min(val/3,6); updateUI(); slashAnims.push({life:1,x:W()/2,y:H()*.08}); play('sword',vol); }
-    else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.80}); play('shield',vol); }
+    else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.88}); play('shield',vol); }
     else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin',vol); }
   } else if(vi>0){
     const ab={PERFECT:5,GREAT:2,COOL:1}[rating];
     if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); shake=Math.min(ab/3,4); slashAnims.push({life:1,x:W()/2,y:H()*.08}); }
-    if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.80}); }
+    if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.88}); }
     if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating); }
     updateUI(); play('snare',vol*0.5);
   }
@@ -535,7 +538,7 @@ function finishPlaying(){
 
   if(isAllPerfect){
     streakCount++; streakActive=true; streakTextTimer=BEAT*1000;
-    sfx.triple();
+    sfx.triple(streakCount);
     const fb=$('hit-fb');
     fb.textContent=`✨ Perfect Streak ${streakCount}!`;
     fb.style.color='#ffaa00'; fb.style.fontSize='14px';
@@ -618,7 +621,7 @@ function advanceEnemy(){
   enemyHP=enemyMaxHP; currentEnemyDmg=BASE_ENEMY_DMG+(enemyNum-1)*10;
   playerHP=PLAYER_MAX_HP; playerShield=0;
   streakCount=0; streakActive=false;
-  updateUI();
+  updateTempo(); updateUI();
   $('e-label').textContent=`ENEMY ${enemyNum}`;
   $('e-atk').textContent=`ATK: ${currentEnemyDmg}`;
   $('result-display').textContent='';
@@ -638,6 +641,7 @@ function resetGame(){
   playerHP=PLAYER_MAX_HP; playerShield=0; gold=0;
   enemyNum=1; enemyMaxHP=BASE_ENEMY_HP; enemyHP=BASE_ENEMY_HP;
   currentEnemyDmg=BASE_ENEMY_DMG;
+  updateTempo();
   slotPhase='idle'; phaseActive=false; showingResults=false;
   paused=false; $('pause-screen').style.display='none'; $('pause-btn').textContent='⏸';
   particles=[]; shake=0; floatingAnims=[]; slashAnims=[]; shieldAnims=[];
@@ -836,7 +840,7 @@ function drawEnemy(){
 }
 
 function drawPlayer(){
-  const cx=W()/2,cy=H()*.80,p=Math.sin(glow*2.5)*2;
+  const cx=W()/2,cy=H()*.88,p=Math.sin(glow*2.5)*2;
   ctx.save();ctx.translate(cx,cy);
   ctx.beginPath();ctx.arc(0,0,25,0,Math.PI*2);ctx.fillStyle='rgba(0,255,170,.06)';ctx.fill();
   ctx.strokeStyle='#00ffaa88';ctx.lineWidth=2;
