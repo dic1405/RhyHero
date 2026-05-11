@@ -7,41 +7,43 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0a0f;color:#e0e0e0;font-family:'Rajdhani',sans-serif;overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-user-select:none;touch-action:manipulation;display:flex;justify-content:center}
-#game-wrap{position:relative;width:100%;max-width:430px;height:100vh;overflow:hidden}
+html{height:100%;overflow:hidden}
+body{background:#0a0a0f;color:#e0e0e0;font-family:'Rajdhani',sans-serif;overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-user-select:none;touch-action:manipulation;display:flex;justify-content:center;align-items:stretch}
+@supports(height:100dvh){body{height:100dvh}}
+#game-wrap{position:relative;width:100%;max-width:430px;height:100%;overflow:hidden;padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
 canvas{display:block;width:100%;height:100%}
 #ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
 #ui *{pointer-events:auto}
-.bar-wrap{position:relative;width:70%;max-width:260px;height:14px;border:2px solid;border-radius:2px;overflow:hidden;background:rgba(0,0,0,.6);margin:0 auto}
+.bar-wrap{position:relative;width:70%;max-width:240px;height:10px;border:1.5px solid;border-radius:2px;overflow:hidden;background:rgba(0,0,0,.6);margin:0 auto}
 .bar-fill{height:100%;transition:width .4s;border-radius:1px}
 
-/* Enemy section — centered below enemy sprite at ~13% */
-#enemy-section{position:absolute;top:18%;left:50%;transform:translateX(-50%);text-align:center;width:80%;max-width:300px;pointer-events:none}
-#e-label{font:11px 'Orbitron',monospace;color:#ff336688;letter-spacing:2px;margin-bottom:4px}
-#e-hp-wrap{border-color:#ff3366;margin-bottom:3px}
+/* Enemy section */
+#enemy-section{position:absolute;top:13%;left:50%;transform:translateX(-50%);text-align:center;width:80%;max-width:280px;pointer-events:none}
+#e-label{font:9px 'Orbitron',monospace;color:#ff336688;letter-spacing:2px;margin-bottom:2px}
+#e-hp-wrap{border-color:#ff3366;margin-bottom:2px}
 #e-hp-fill{background:linear-gradient(90deg,#ff3366,#cc2255);width:100%}
-#e-hp-txt{font:11px 'Orbitron',monospace;color:#ff3366;text-shadow:0 0 8px #ff336666;margin-bottom:2px}
-#e-atk{font:10px 'Orbitron',monospace;color:#ff336666;letter-spacing:1px}
+#e-hp-txt{font:9px 'Orbitron',monospace;color:#ff3366;text-shadow:0 0 8px #ff336666;margin-bottom:1px}
+#e-atk{font:8px 'Orbitron',monospace;color:#ff336666;letter-spacing:1px}
 
-/* Player section — centered below player sprite at ~90% */
-#player-section{position:absolute;bottom:2%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:320px;pointer-events:none}
-#p-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:0 4px}
-#p-hp-txt{font:12px 'Orbitron',monospace;color:#00ffaa;text-shadow:0 0 8px #00ffaa66}
-#gold-display{font:12px 'Orbitron',monospace;color:#ffaa00;text-shadow:0 0 8px #ffaa0044}
-#p-hp-wrap{border-color:#00ffaa;margin-bottom:4px}
+/* Player section */
+#player-section{position:absolute;bottom:0.5%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:300px;pointer-events:none}
+#p-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;padding:0 4px}
+#p-hp-txt{font:10px 'Orbitron',monospace;color:#00ffaa;text-shadow:0 0 8px #00ffaa66}
+#gold-display{font:10px 'Orbitron',monospace;color:#ffaa00;text-shadow:0 0 8px #ffaa0044}
+#p-hp-wrap{border-color:#00ffaa;margin-bottom:2px}
 #p-hp-fill{background:linear-gradient(90deg,#00ffaa,#00cc88);width:100%}
-#p-shield-wrap{border-color:#4488ff;height:8px;margin-bottom:2px}
+#p-shield-wrap{border-color:#4488ff;height:5px;margin-bottom:1px}
 #p-shield-fill{background:linear-gradient(90deg,#4488ff,#2266cc);width:0%}
-#p-shield-txt{font:9px 'Orbitron',monospace;color:#4488ff88}
-#phase-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:32px/1 'Orbitron',monospace;font-weight:900;color:#fff;text-shadow:0 0 30px currentColor;opacity:0;transition:opacity .3s;pointer-events:none}
-#hit-fb{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font:24px 'Orbitron',monospace;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .3s}
-#result-display{position:absolute;bottom:18%;left:50%;transform:translateX(-50%);font:14px 'Orbitron',monospace;color:#aaa;text-align:center;pointer-events:none;white-space:nowrap}
-#info{position:absolute;top:85px;left:50%;transform:translateX(-50%);font:13px 'Orbitron',monospace;color:#666;text-align:center;pointer-events:none}
-#instructions{position:absolute;bottom:16%;left:50%;transform:translateX(-50%);font:13px 'Rajdhani',sans-serif;color:#555;text-align:center;pointer-events:none}
+#p-shield-txt{font:7px 'Orbitron',monospace;color:#4488ff88}
+#phase-label{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);font:26px/1 'Orbitron',monospace;font-weight:900;color:#fff;text-shadow:0 0 30px currentColor;opacity:0;transition:opacity .3s;pointer-events:none}
+#hit-fb{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);font:18px 'Orbitron',monospace;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .3s}
+#result-display{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);font:11px 'Orbitron',monospace;color:#aaa;text-align:center;pointer-events:none;white-space:nowrap}
+#info{position:absolute;top:27%;left:50%;transform:translateX(-50%);font:10px 'Orbitron',monospace;color:#666;text-align:center;pointer-events:none}
+#instructions{position:absolute;bottom:12%;left:50%;transform:translateX(-50%);font:11px 'Rajdhani',sans-serif;color:#555;text-align:center;pointer-events:none}
 .overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(5,5,10,.93);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100}
-.overlay h1{font:48px 'Orbitron',monospace;font-weight:900;margin-bottom:20px}
-.overlay p{font:20px 'Rajdhani',sans-serif;color:#888;margin-bottom:30px}
-.btn{font:16px 'Orbitron',monospace;padding:14px 40px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;transition:all .2s}
+.overlay h1{font:32px 'Orbitron',monospace;font-weight:900;margin-bottom:14px}
+.overlay p{font:16px 'Rajdhani',sans-serif;color:#888;margin-bottom:20px}
+.btn{font:14px 'Orbitron',monospace;padding:12px 36px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;transition:all .2s}
 .btn:hover{background:#00ffaa;color:#0a0a0f}
 #roll-btn:hover{background:#ffaa00;color:#0a0a0f;border-color:#ffaa00}
 #start-screen{display:flex}
@@ -137,10 +139,11 @@ function loadMP3(name, url){
   audio.preload = 'auto';
   mp3Cache[name] = audio;
 }
-loadMP3('slot', AUDIO_BASE + 'Slot.mp3');
-loadMP3('sword', AUDIO_BASE + 'Sword.mp3');
-loadMP3('shield', AUDIO_BASE + 'Shield.mp3');
-loadMP3('coin', AUDIO_BASE + 'Coin.mp3');
+loadMP3('slot', AUDIO_BASE + 'Slot.wav');
+loadMP3('sword', AUDIO_BASE + 'Sword.wav');
+loadMP3('shield', AUDIO_BASE + 'Shield.wav');
+loadMP3('coin', AUDIO_BASE + 'Coin.wav');
+loadMP3('snare', AUDIO_BASE + 'Snare.wav');
 
 function playMP3(name, vol=1.0){
   const src = mp3Cache[name];
@@ -170,14 +173,14 @@ const sfx = {
   triple(){ [0,60,120,180].forEach((d,i)=>setTimeout(()=>tone(800+i*200,.12,.12),d)) },
   nextEnemy(){ tone(600,.15,.12); setTimeout(()=>tone(800,.15,.12),120); setTimeout(()=>tone(1000,.2,.1),240) },
   defeat(){ [0,150,300].forEach((d,i)=>setTimeout(()=>tone(300-i*80,.4,.12,'sawtooth'),d)) },
-  tick(){ playMP3('slot', 0.4) },
+  tick(){ playMP3('snare', 0.5) },
 };
 
 // ── Constants ──
 const BEAT = 60/85; // seconds per full beat (85 BPM)
 const PLAYER_MAX_HP = 300;
-const BASE_ENEMY_HP = 300;
-const ENEMY_DMG = 30;
+const BASE_ENEMY_HP = 100;
+const BASE_ENEMY_DMG = 50;
 const ICONS = ['sword','shield','gold'];
 const ICON_SYMBOLS = { sword:'⚔', shield:'🛡', gold:'💰' };
 const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00' };
@@ -189,15 +192,19 @@ let gold = 0;
 let enemyMaxHP = BASE_ENEMY_HP;
 let enemyHP = BASE_ENEMY_HP;
 let enemyNum = 1;
+let currentEnemyDmg = BASE_ENEMY_DMG;
 
 // Slot state
 let slotIcons = [null,null,null]; // rolled icons
-let slotBeats = [null,null,null]; // 'F' or 'HH'
+let slotBeats = [null,null,null]; // 'F', 'HH', or 'H' per icon
 let slotPhase = 'idle';
-// 'rolling-icons' -> 'rolling-beats' -> 'show-result' -> 'playing' -> 'enemy-turn' -> back
-let slotStep = 0; // which slot is rolling (0,1,2)
+let slotStep = 0;
 let slotTimer = 0;
-let slotRollAnim = 0; // for visual spin
+let slotRollAnim = 0;
+let slotSchedule = []; // timed reveal events
+let slotScheduleTime = 0;
+let slotScheduleIdx = 0;
+let iconDotVertices = []; // which glyph vertices are icon dots
 
 // Glyph / rhythm state
 let glyphVerts = [];
@@ -209,6 +216,7 @@ let totalInts = 0;
 let turnResults = [];
 let phaseActive = false;
 let showingResults = false;
+let endPauseTimer = 0;
 
 // Reward tracking
 let baseValues = { sword:0, shield:0, gold:0 };
@@ -241,13 +249,17 @@ const W=()=>gameWrap.clientWidth, H=()=>gameWrap.clientHeight;
 
 // ── Slot Machine Logic ──
 // Results are pre-calculated so sounds can match the actual rhythm
-const INIT_EDGES = 1; // 1 leading edge as count-in, not tappable
+const INIT_EDGES = 0; // v0 is the start point, not tappable
 
 function showRollButton(){
   document.getElementById('roll-btn').style.display = 'block';
   document.getElementById('info').textContent = '';
   document.getElementById('result-display').textContent = '';
   document.getElementById('instructions').textContent = '';
+  slotPhase = 'waiting';
+  slotRevealedIcons = [false, false, false];
+  slotBeatLines = [0, 0, 0];
+  slotBeatFlash = [0, 0, 0];
   // Reset indicator values for fresh display
   baseValues = { sword:0, shield:0, gold:0 };
   tapValues = { sword:0, shield:0, gold:0 };
@@ -256,22 +268,15 @@ function showRollButton(){
 
 function startSlotPhase(){
   document.getElementById('roll-btn').style.display = 'none';
-  // Pre-roll everything
   slotIcons = [rollOneIcon(), rollOneIcon(), rollOneIcon()];
   slotBeats = [rollOneBeat(), rollOneBeat(), rollOneBeat()];
-
-  // But visually reveal them one by one
   slotRevealedIcons = [false, false, false];
-  slotRevealedBeats = [false, false, false];
 
-  slotPhase = 'rolling-icons';
-  slotStep = 0;
-  slotTimer = BEAT * 1000;
+  slotPhase = 'rolling';
   slotRollAnim = 0;
   phaseActive = false;
   showingResults = false;
 
-  // Pre-calculate base values from icons (pre-rolled)
   baseValues = { sword:0, shield:0, gold:0 };
   tapValues = { sword:0, shield:0, gold:0 };
   allPerfectSoFar = true;
@@ -290,6 +295,49 @@ function startSlotPhase(){
     });
   }
 
+  // Build rhythmic reveal schedule — matches exact play sequence
+  // Structure: init(F) → icon0 dot → beat edges → icon1 dot → ...
+  const previewEdges = [1]; // init
+  let vp = 1;
+  const tempIconVerts = [];
+  for(let i=0; i<3; i++){
+    tempIconVerts.push(vp);
+    const bt = slotBeats[i];
+    if(bt === 'F'){ previewEdges.push(1); vp += 1; }
+    else if(bt === 'HH'){ previewEdges.push(0.5); previewEdges.push(0.5); vp += 2; }
+    else { previewEdges.push(0.5); vp += 1; }
+  }
+  previewEdges.pop(); // remove trailing
+
+  // Build schedule — tag snare events with owning slot for beat line tracking
+  slotSchedule = [];
+  slotSchedule.push({time: 0, action: 'init', slot: -1});
+  slotBeatLines = [0, 0, 0];
+  slotBeatFlash = [0, 0, 0];
+  // Map intermediate vertices to owning slot (for HH)
+  const vertToSlot = {};
+  let vc = 1;
+  for(let i=0; i<3; i++){
+    if(slotBeats[i] === 'HH') vertToSlot[vc + 1] = i;
+    if(slotBeats[i] === 'F') vc += 1;
+    else if(slotBeats[i] === 'HH') vc += 2;
+    else vc += 1;
+  }
+  let t = 0;
+  for(let e=0; e<previewEdges.length; e++){
+    t += previewEdges[e] * BEAT * 1000;
+    const vertIdx = e + 1;
+    const iconIdx = tempIconVerts.indexOf(vertIdx);
+    if(iconIdx >= 0){
+      slotSchedule.push({time: t, action: 'reveal', slot: iconIdx});
+    } else {
+      const owner = vertToSlot[vertIdx] !== undefined ? vertToSlot[vertIdx] : -1;
+      slotSchedule.push({time: t, action: 'snare', slot: owner});
+    }
+  }
+  slotScheduleTime = 0;
+  slotScheduleIdx = 0;
+
   const label = document.getElementById('phase-label');
   label.textContent = '🎰 ROLL';
   label.style.color = '#ffaa00';
@@ -297,78 +345,91 @@ function startSlotPhase(){
   label.style.opacity = 1;
   setTimeout(()=>{ label.style.opacity = 0 }, 600);
 
-  document.getElementById('info').textContent = 'Rolling icons...';
   document.getElementById('result-display').textContent = '';
   document.getElementById('instructions').textContent = '';
 }
 
 let slotRevealedIcons = [false,false,false];
-let slotRevealedBeats = [false,false,false];
+let slotBeatLines = [0,0,0]; // how many beat lines visible per slot
+let slotBeatFlash = [0,0,0]; // flash timer per slot
 
 function rollOneIcon(){ return ICONS[Math.floor(Math.random()*3)] }
-function rollOneBeat(){ return Math.random() < 0.5 ? 'F' : 'HH' }
+function rollOneBeat(){
+  const r = Math.random();
+  if(r < 0.4) return 'F';
+  if(r < 0.75) return 'HH';
+  return 'H';
+}
 
 function updateSlots(dt){
-  if(slotPhase === 'idle') return;
+  if(slotPhase === 'idle' || slotPhase === 'waiting') return;
   slotRollAnim += dt * .006;
-  slotTimer -= dt;
 
-  if(slotPhase === 'rolling-icons'){
-    if(slotTimer <= 0){
-      slotRevealedIcons[slotStep] = true;
-      sfx.slotLand(slotIcons[slotStep]);
-      slotStep++;
-      if(slotStep >= 3){
-        slotPhase = 'rolling-beats';
-        slotStep = 0;
-        slotTimer = BEAT * 1000;
-        document.getElementById('info').textContent = 'Rolling beats...';
-      } else {
-        slotTimer = BEAT * 1000;
+  if(slotPhase === 'rolling'){
+    slotScheduleTime += dt;
+    while(slotScheduleIdx < slotSchedule.length &&
+          slotScheduleTime >= slotSchedule[slotScheduleIdx].time){
+      const ev = slotSchedule[slotScheduleIdx];
+      if(ev.action === 'reveal'){
+        slotRevealedIcons[ev.slot] = true;
+        sfx.slotLand(slotIcons[ev.slot]);
+        // Show first beat line
+        slotBeatLines[ev.slot] = 1;
+        slotBeatFlash[ev.slot] = 300;
+      } else if(ev.action === 'init'){
+        playMP3('slot');
+      } else if(ev.action === 'snare'){
+        sfx.tick();
+        // Show second beat line for HH slot
+        if(ev.slot >= 0){
+          slotBeatLines[ev.slot] = 2;
+          slotBeatFlash[ev.slot] = 300;
+        }
       }
+      slotScheduleIdx++;
     }
-  } else if(slotPhase === 'rolling-beats'){
-    if(slotTimer <= 0){
-      slotRevealedBeats[slotStep] = true;
-
-      // Play the ACTUAL rhythm sound for this beat slot
-      if(slotBeats[slotStep] === 'F'){
-        sfx.beatSlotF();
-      } else {
-        // HH: two quick hits — first now, second after half a beat
-        sfx.beatSlotHH();
-      }
-
-      slotStep++;
-      if(slotStep >= 3){
-        slotPhase = 'show-result';
-        slotTimer = 800;
-        const isTriple = slotIcons[0]===slotIcons[1] && slotIcons[1]===slotIcons[2];
-        if(isTriple) sfx.triple();
-
-        const icons = slotIcons.map(i=>ICON_SYMBOLS[i]).join(' ');
-        const beats = slotBeats.join(' ');
-        document.getElementById('info').textContent = `${icons}  ·  ${beats}`;
-        document.getElementById('instructions').textContent = 'Listen to the rhythm...';
-      } else {
-        slotTimer = BEAT * 1000;
-      }
+    // Decay beat line flash
+    for(let i=0;i<3;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
+    if(slotScheduleIdx >= slotSchedule.length){
+      slotPhase = 'show-result';
+      slotTimer = BEAT * 800;
+      const isTriple = slotIcons[0]===slotIcons[1] && slotIcons[1]===slotIcons[2];
+      if(isTriple) sfx.triple();
     }
   } else if(slotPhase === 'show-result'){
+    slotTimer -= dt;
+    for(let i=0;i<3;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(slotTimer <= 0){
       startGlyphPhase();
     }
   }
 }
 
-// ── Build Glyph from beat slots ──
-// Full rhythm = 1 init beat (count-in) + 3 F beats (icon slots) + beat slot results
+// ── Build Glyph from icon beat types ──
 function buildRhythmFromSlots(){
-  const edges = [1, 1, 1, 1]; // 1 init + 3 icon slots = 4 full beats
-  for(let i=0;i<3;i++){
-    if(slotBeats[i] === 'F') edges.push(1);
-    else { edges.push(.5); edges.push(.5); }
+  // Structure: init(F) → [icon0 dot] → icon0's beat edges → [icon1 dot] → ...
+  // Icon dot is at the START of each icon's space
+  // Beat type determines edges AFTER the icon dot
+  const edges = [1]; // init beat — always 1 full beat leading to first icon
+  iconDotVertices = [];
+  let vertPos = 1; // v0=init, v1=first icon dot
+
+  for(let i=0; i<3; i++){
+    iconDotVertices.push(vertPos);
+    const bt = slotBeats[i];
+    if(bt === 'F'){
+      edges.push(1);
+      vertPos += 1;
+    } else if(bt === 'HH'){
+      edges.push(0.5);
+      edges.push(0.5);
+      vertPos += 2;
+    } else { // H
+      edges.push(0.5);
+      vertPos += 1;
+    }
   }
+  edges.pop(); // remove trailing edge from last icon
   return edges;
 }
 
@@ -376,94 +437,84 @@ function buildGlyph(edgeMults, cx, cy, radius){
   const n = edgeMults.length;
   const numVerts = n + 1;
 
-  // Each edge's pixel length is proportional to its beat multiplier.
-  // F = unitLen, H = unitLen/2. Dot speed is constant.
   const totalWeight = edgeMults.reduce((a,b)=>a+b, 0);
   const hWeight = edgeMults.slice(INIT_EDGES).reduce((a,b)=>a+b, 0);
 
   // Pick shape type — 6 variants
   const shapeType = Math.floor(Math.random()*6);
 
-  // Base angle varies by shape — steeper = less horizontal span
-  const angles = [Math.PI/3, Math.PI/3, Math.PI/2.8, Math.PI/3.5, Math.PI/2.5, Math.PI/3];
-  const baseAngle = angles[shapeType];
+  // Base angle for zigzag (from horizontal)
+  const baseAngle = Math.PI / 3; // 60° — steep enough to avoid wide spread
 
   // Target 96px per beat, scale down to fit screen width
   const maxWidth = W() - 80;
-  // Estimate max horizontal span based on shape type
-  let hEstimate;
-  if(shapeType === 2){ // Snake — goes right then left, net ~half
-    hEstimate = hWeight * 0.6 * Math.cos(baseAngle);
-  } else if(shapeType === 4){ // Cascade — mostly vertical
-    hEstimate = hWeight * 0.3;
-  } else {
-    hEstimate = hWeight * Math.cos(baseAngle);
-  }
-  const maxUnit = hEstimate > 0 ? maxWidth / hEstimate : 96;
+  const estH = hWeight * Math.cos(baseAngle) * (shapeType === 2 ? 0.6 : 1);
+  const maxUnit = estH > 0 ? maxWidth / estH : 96;
   const unitLen = Math.min(96, maxUnit);
 
-  const verts = [];
-  let x = 0, y = 0;
-  verts.push({x, y});
+  // Pre-compute angle for each edge
   const postInitCount = n - INIT_EDGES;
-
+  const edgeAngles = [];
   for(let i = 0; i < n; i++){
-    const len = edgeMults[i] * unitLen;
-
     if(i < INIT_EDGES){
-      // Init edge — vertical line (straight down)
-      y += len;
-      verts.push({x, y});
+      edgeAngles.push(Math.PI / 2); // vertical down
     } else {
-      const zi = i - INIT_EDGES; // index within playable edges
-      let hComp, vComp;
-
+      const zi = i - INIT_EDGES;
+      let a;
       if(shapeType === 0){
-        // Zigzag steep down-first
-        const dir = (zi%2===0) ? 1 : -1;
-        hComp = len * Math.cos(baseAngle);
-        vComp = len * Math.sin(baseAngle) * dir;
+        // Zigzag down-first
+        a = (zi%2===0) ? baseAngle : -baseAngle;
       }
       else if(shapeType === 1){
-        // Zigzag steep up-first
-        const dir = (zi%2===0) ? -1 : 1;
-        hComp = len * Math.cos(baseAngle);
-        vComp = len * Math.sin(baseAngle) * dir;
+        // Zigzag up-first
+        a = (zi%2===0) ? -baseAngle : baseAngle;
       }
       else if(shapeType === 2){
-        // Snake — first half goes right, second half goes left
+        // Snake — right then left
         const halfPoint = Math.floor(postInitCount / 2);
         const goingRight = zi < halfPoint;
         const dir = (zi%2===0) ? 1 : -1;
-        hComp = len * Math.cos(baseAngle) * (goingRight ? 1 : -1);
-        vComp = len * Math.sin(baseAngle) * dir;
+        const hDir = goingRight ? 1 : -1;
+        a = Math.atan2(Math.sin(baseAngle) * dir, Math.cos(baseAngle) * hDir);
       }
       else if(shapeType === 3){
-        // Staircase — alternates steep/shallow angles
+        // Staircase — alternating steep/shallow, same total length
         const steep = zi % 2 === 0;
-        const a = steep ? Math.PI/2.2 : Math.PI/5;
+        const ang = steep ? Math.PI/2.2 : Math.PI/5;
         const dir = (Math.floor(zi/2)%2===0) ? 1 : -1;
-        hComp = len * Math.cos(a);
-        vComp = len * Math.sin(a) * dir;
+        a = ang * dir;
       }
       else if(shapeType === 4){
-        // Cascade — mostly vertical, slight horizontal drift
-        const dir = (zi%2===0) ? 1 : -0.6;
-        hComp = len * 0.25;
-        vComp = len * 0.97 * dir;
+        // Cascade — steep with drift
+        const dir = (zi%2===0) ? 1 : -1;
+        a = (Math.PI/2.5) * dir;
       }
       else {
-        // Wave — gradual sine-like vertical oscillation
+        // Wave — sine oscillation
         const phase = (zi / Math.max(1, postInitCount-1)) * Math.PI * 2;
         const dir = Math.sin(phase);
-        hComp = len * Math.cos(baseAngle);
-        vComp = len * Math.sin(baseAngle) * dir;
+        a = baseAngle * dir;
       }
-
-      x += hComp;
-      y += vComp;
-      verts.push({x, y});
+      edgeAngles.push(a);
     }
+  }
+
+  // Place vertices — each edge is exactly len pixels long
+  const verts = [];
+  let x = 0, y = 0;
+  verts.push({x, y});
+
+  for(let i = 0; i < n; i++){
+    const len = edgeMults[i] * unitLen;
+    const a = edgeAngles[i];
+    // For init edges, go straight down; for others, horizontal + angle
+    if(i < INIT_EDGES){
+      y += len;
+    } else {
+      x += len * Math.cos(a);
+      y += len * Math.sin(a);
+    }
+    verts.push({x, y});
   }
 
   // Center the shape on (cx, cy)
@@ -487,7 +538,7 @@ function startGlyphPhase(){
   slotPhase = 'playing';
 
   // Build glyph from slot results
-  const cx = W()/2, cy = H()*0.58;
+  const cx = W()/2, cy = H()*0.54;
   const radius = Math.min(W(),H()) * 0.15;
   const edgeMults = buildRhythmFromSlots();
   const g = buildGlyph(edgeMults, cx, cy, radius);
@@ -499,9 +550,11 @@ function startGlyphPhase(){
   dotSeg = 0;
   dotProg = 0;
   intHits = new Array(totalInts).fill(false);
-  intHits[0] = true; // init vertex not tappable
+  intHits[0] = true; // v0 init point, not tappable
   turnResults = [];
   phaseActive = true;
+  endPauseTimer = 0;
+  playMP3('slot'); // init beat — same as roll start
 
   // Reset tap values for this play (base values already set from slot roll)
   tapValues = { sword:0, shield:0, gold:0 };
@@ -514,11 +567,6 @@ function startGlyphPhase(){
   label.style.textShadow = '0 0 30px #00ffaa66';
   label.style.opacity = 1;
   setTimeout(()=>{ label.style.opacity = 0 }, 500);
-
-  const iconBeats = edgeMults.slice(INIT_EDGES, INIT_EDGES+3).map(m => m<=.5?'H':'F').join(' ');
-  const slotRhythm = edgeMults.slice(INIT_EDGES+3).map(m => m<=.5?'H':'F').join(' ');
-  document.getElementById('info').textContent = `[ ${iconBeats} · ${slotRhythm} ]`;
-  document.getElementById('instructions').textContent = 'SPACE / TAP at intersections!';
 }
 
 // ── Dot & Hit ──
@@ -545,41 +593,148 @@ function handleHit(){
   const r = evalHit();
   if(r.rating!=='MISS'){
     const idx = r.nearEnd ? glyphEdges[dotSeg].to : glyphEdges[dotSeg].from;
-    if(idx < INIT_EDGES) return; // init vertex, not tappable
+    if(idx === 0) return; // init vertex, not tappable
     if(!intHits[idx]){
       intHits[idx]=true;
       turnResults.push(r.rating);
       showFB(r.rating);
       spawnParticles(glyphVerts[idx].x, glyphVerts[idx].y, r.rating);
-      applyTapBonus(idx, r.rating);
+      applyTapImmediate(idx, r.rating);
       if(r.rating !== 'PERFECT') allPerfectSoFar = false;
-    } else { showFB('MISS'); sfx.miss(); }
+    } else { showFB('MISS'); }
   } else {
-    showFB('MISS'); turnResults.push('MISS');
+    showFB('MISS'); sfx.miss(); turnResults.push('MISS');
     allPerfectSoFar = false;
   }
 }
 
-function applyTapBonus(vertIdx, rating){
-  // Icon dots: vertices INIT_EDGES to INIT_EDGES+2
-  if(vertIdx >= INIT_EDGES && vertIdx < INIT_EDGES + 3){
-    const iconIdx = vertIdx - INIT_EDGES;
+// ── Floating Animations ──
+let floatingAnims = [];
+let slashAnims = [];
+let shieldAnims = [];
+
+function applyTapImmediate(vertIdx, rating){
+  const vx = glyphVerts[vertIdx].x;
+  const vy = glyphVerts[vertIdx].y;
+
+  const iconIdx = iconDotVertices.indexOf(vertIdx);
+  if(iconIdx >= 0){
+    // This is an icon dot
     const icon = slotIcons[iconIdx];
     const bonuses = {
-      sword: { PERFECT:10, GREAT:5, COOL:2 },
-      shield: { PERFECT:10, GREAT:5, COOL:2 },
-      gold: { PERFECT:3, GREAT:2, COOL:1 }
+      sword: { PERFECT:20, GREAT:15, COOL:12 },
+      shield: { PERFECT:15, GREAT:12, COOL:11 },
+      gold: { PERFECT:5, GREAT:2, COOL:1 }
     };
-    tapValues[icon] += bonuses[icon][rating];
+    const val = bonuses[icon][rating];
+    tapValues[icon] += val;
+
+    if(icon === 'sword'){
+      enemyHP = Math.max(0, enemyHP - val);
+      shake = Math.min(val / 3, 6);
+      updateUI();
+      slashAnims.push({ life:1, x: W()/2, y: H()*0.08 });
+      playMP3('sword');
+    } else if(icon === 'shield'){
+      playerShield += val;
+      updateUI();
+      shieldAnims.push({ life:1, x: W()/2, y: H()*0.83 });
+      playMP3('shield');
+    } else if(icon === 'gold'){
+      gold += val;
+      updateUI();
+      spawnCoinParticles(vx, vy, rating);
+      playMP3('coin');
+    }
   }
-  // Beat dots: vertices INIT_EDGES+3 onwards — add to ALL
-  else if(vertIdx >= INIT_EDGES + 3){
-    const allBonus = { PERFECT:3, GREAT:2, COOL:1 };
+  else if(vertIdx > 0){
+    // Beat/intermediate dot — add to all active icons
+    const allBonus = { PERFECT:5, GREAT:2, COOL:1 };
     const val = allBonus[rating];
-    tapValues.sword += val;
-    tapValues.shield += val;
-    tapValues.gold += val;
+    if(baseValues.sword > 0){
+      tapValues.sword += val;
+      enemyHP = Math.max(0, enemyHP - val);
+      shake = Math.min(val / 3, 4);
+      slashAnims.push({ life:1, x: W()/2, y: H()*0.08 });
+    }
+    if(baseValues.shield > 0){
+      tapValues.shield += val;
+      playerShield += val;
+      shieldAnims.push({ life:1, x: W()/2, y: H()*0.83 });
+    }
+    if(baseValues.gold > 0){
+      tapValues.gold += val;
+      gold += val;
+      spawnCoinParticles(vx, vy, rating);
+    }
+    updateUI();
+    sfx.tick(); // snare for beat dot tap
   }
+}
+
+function spawnCoinParticles(x, y, rating){
+  const count = rating === 'PERFECT' ? 3 : rating === 'GREAT' ? 2 : 1;
+  for(let i = 0; i < count; i++){
+    floatingAnims.push({
+      x: x + (Math.random()-0.5) * 20,
+      y: y,
+      vx: (Math.random()-0.5) * 2,
+      vy: -3 - Math.random() * 2,
+      life: 1,
+      text: '💰',
+      size: 14 + Math.random() * 4
+    });
+  }
+}
+
+function updateFloatingAnims(dt){
+  const decay = dt / 800;
+  floatingAnims = floatingAnims.filter(a => a.life > 0);
+  floatingAnims.forEach(a => {
+    a.x += a.vx; a.y += a.vy; a.vy += 0.08; a.life -= decay;
+  });
+  slashAnims = slashAnims.filter(a => a.life > 0);
+  slashAnims.forEach(a => { a.life -= dt / 300; });
+  shieldAnims = shieldAnims.filter(a => a.life > 0);
+  shieldAnims.forEach(a => { a.life -= dt / 500; });
+}
+
+function drawFloatingAnims(){
+  floatingAnims.forEach(a => {
+    ctx.globalAlpha = Math.max(0, a.life);
+    ctx.font = a.size + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(a.text, a.x, a.y);
+    ctx.globalAlpha = 1;
+  });
+  slashAnims.forEach(a => {
+    const t = 1 - a.life;
+    ctx.save(); ctx.translate(a.x, a.y);
+    ctx.globalAlpha = Math.max(0, a.life);
+    ctx.strokeStyle = '#ff4466'; ctx.lineWidth = 3 * a.life;
+    ctx.beginPath();
+    const len = 25 + t * 15;
+    ctx.moveTo(-len, -len*0.6); ctx.lineTo(len, len*0.6); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(len*0.8, -len*0.5); ctx.lineTo(-len*0.8, len*0.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, 20+t*20, 0, Math.PI*2);
+    const g = ctx.createRadialGradient(0,0,0,0,0,20+t*20);
+    g.addColorStop(0,'rgba(255,68,102,0.3)'); g.addColorStop(1,'transparent');
+    ctx.fillStyle = g; ctx.fill();
+    ctx.globalAlpha = 1; ctx.restore();
+  });
+  shieldAnims.forEach(a => {
+    const t = 1 - a.life;
+    const slideY = a.y - t * 30;
+    ctx.globalAlpha = Math.max(0, a.life);
+    ctx.font = '20px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('🛡', a.x, slideY);
+    ctx.beginPath(); ctx.arc(a.x, slideY, 18, 0, Math.PI*2);
+    const g = ctx.createRadialGradient(a.x,slideY,0,a.x,slideY,18);
+    g.addColorStop(0,'rgba(68,136,255,0.3)'); g.addColorStop(1,'transparent');
+    ctx.fillStyle = g; ctx.fill();
+    ctx.globalAlpha = 1;
+  });
 }
 
 function showFB(r){
@@ -589,7 +744,6 @@ function showFB(r){
   fb.style.textShadow=`0 0 20px ${c[r]}88`;
   fb.style.opacity=1; fb.style.transform='translate(-50%,-50%) scale(1.3)';
   setTimeout(()=>{fb.style.opacity=0;fb.style.transform='translate(-50%,-50%) scale(1)'},300);
-  sfx[r.toLowerCase()] && sfx[r.toLowerCase()]();
 }
 
 function spawnParticles(x,y,rating){
@@ -602,153 +756,41 @@ function spawnParticles(x,y,rating){
 }
 
 // ── Finish Playing Phase ──
-// Result animation state
-let resultQueue = []; // [{type, value, icon, color}]
-let resultIdx = -1;
-let resultSubPhase = ''; // 'show' or 'apply'
-let resultTimer = 0;
-let resultFinals = { sword:0, shield:0, gold:0 };
-let resultAnimActive = false;
 
 function finishPlaying(){
   phaseActive = false;
   showingResults = true;
 
   // Check all perfect
-  const tappable = totalInts - INIT_EDGES;
+  const tappable = totalInts - 1; // v0 is not tappable
   const tapped = turnResults.filter(r=>r!=='MISS').length;
   if(tapped < tappable) allPerfectSoFar = false;
   isAllPerfect = allPerfectSoFar;
 
-  // Calculate final values: (base + tap) × multiplier
-  const mult = isAllPerfect ? 1.5 : 1;
-  resultFinals.sword = Math.round((baseValues.sword + tapValues.sword) * mult);
-  resultFinals.shield = Math.round((baseValues.shield + tapValues.shield) * mult);
-  resultFinals.gold = Math.round((baseValues.gold + tapValues.gold) * mult);
-
-  // Build result queue — only include non-zero values
-  resultQueue = [];
+  // All perfect bonus: apply x1.5 retroactively
   if(isAllPerfect){
-    resultQueue.push({ type:'perfect', value:0, icon:'✨', label:'ALL PERFECT ×1.5', color:'#ffaa00' });
-  }
-  if(resultFinals.sword > 0)
-    resultQueue.push({ type:'sword', value:resultFinals.sword, icon:'⚔', label:`${resultFinals.sword} DAMAGE`, color:ICON_COLORS.sword });
-  if(resultFinals.shield > 0)
-    resultQueue.push({ type:'shield', value:resultFinals.shield, icon:'🛡', label:`+${resultFinals.shield} SHIELD`, color:ICON_COLORS.shield });
-  if(resultFinals.gold > 0)
-    resultQueue.push({ type:'gold', value:resultFinals.gold, icon:'💰', label:`+${resultFinals.gold} GOLD`, color:ICON_COLORS.gold });
-
-  document.getElementById('result-display').textContent = '';
-  document.getElementById('info').textContent = '';
-
-  if(resultQueue.length === 0){
-    // Nothing to show, go to enemy turn
-    finishResultAnim();
-    return;
-  }
-
-  // Start animation
-  resultIdx = 0;
-  resultSubPhase = 'show';
-  resultTimer = BEAT * 1000;
-  resultAnimActive = true;
-
-  // Play sound for first item
-  playResultSound(resultQueue[0]);
-}
-
-function playResultSound(item){
-  if(item.type === 'perfect') sfx.triple();
-  else if(item.type === 'sword') playMP3('sword');
-  else if(item.type === 'shield') playMP3('shield');
-  else if(item.type === 'gold') playMP3('coin');
-}
-
-function applyResultItem(item){
-  if(item.type === 'sword'){
-    enemyHP = Math.max(0, enemyHP - item.value);
-    shake = Math.min(item.value/6, 12);
+    const bonusSword = Math.round((baseValues.sword + tapValues.sword) * 0.5);
+    const bonusShield = Math.round((baseValues.shield + tapValues.shield) * 0.5);
+    const bonusGold = Math.round((baseValues.gold + tapValues.gold) * 0.5);
+    if(bonusSword > 0){ enemyHP = Math.max(0, enemyHP - bonusSword); tapValues.sword += bonusSword; }
+    if(bonusShield > 0){ playerShield += bonusShield; tapValues.shield += bonusShield; }
+    if(bonusGold > 0){ gold += bonusGold; tapValues.gold += bonusGold; }
     updateUI();
-  } else if(item.type === 'shield'){
-    playerShield += item.value;
-    updateUI();
-  } else if(item.type === 'gold'){
-    gold += item.value;
-    updateUI();
+    sfx.triple();
+    document.getElementById('result-display').textContent = '✨ ALL PERFECT ×1.5!';
+    document.getElementById('result-display').style.color = '#ffaa00';
   }
-  // 'perfect' type has no apply effect — just visual
-}
-
-function updateResultAnim(dt){
-  if(!resultAnimActive) return;
-  resultTimer -= dt;
-  if(resultTimer > 0) return;
-
-  if(resultSubPhase === 'show'){
-    // Apply the effect now
-    applyResultItem(resultQueue[resultIdx]);
-    resultSubPhase = 'apply';
-    resultTimer = BEAT * 1000;
-    playResultSound(resultQueue[resultIdx]);
-  } else {
-    // Move to next item
-    resultIdx++;
-    if(resultIdx >= resultQueue.length){
-      finishResultAnim();
-    } else {
-      resultSubPhase = 'show';
-      resultTimer = BEAT * 1000;
-      playResultSound(resultQueue[resultIdx]);
-    }
-  }
-}
-
-function finishResultAnim(){
-  resultAnimActive = false;
-  showingResults = false;
 
   if(enemyHP <= 0){
-    setTimeout(()=>advanceEnemy(), 800);
+    setTimeout(()=>advanceEnemy(), 1200);
     return;
   }
-  // Enemy turn
-  setTimeout(()=>enemyTurn(), 400);
-}
 
-function drawResultAnim(){
-  if(!resultAnimActive || resultIdx < 0 || resultIdx >= resultQueue.length) return;
-
-  const item = resultQueue[resultIdx];
-  const cx = W()/2;
-  const cy = H()/2;
-
-  // Background dim
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.fillRect(0, cy - 50, W(), 100);
-
-  // Icon
-  ctx.font = '42px serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#fff';
-  ctx.fillText(item.icon, cx, cy - 8);
-
-  // Label
-  ctx.font = '18px Orbitron';
-  ctx.fillStyle = item.color;
-  ctx.textShadow = `0 0 20px ${item.color}`;
-  ctx.fillText(item.label, cx, cy + 30);
-
-  // Show apply feedback — flash when applying
-  if(resultSubPhase === 'apply'){
-    const flash = Math.sin(glow * 15) * 0.3 + 0.7;
-    ctx.globalAlpha = flash;
-    ctx.beginPath(); ctx.arc(cx, cy, 55, 0, Math.PI*2);
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 55);
-    g.addColorStop(0, item.color + '33');
-    g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g; ctx.fill();
-    ctx.globalAlpha = 1;
-  }
+  setTimeout(()=>{
+    showingResults = false;
+    document.getElementById('result-display').textContent = '';
+    enemyTurn();
+  }, isAllPerfect ? 1500 : 800);
 }
 
 // ── Enemy Turn ──
@@ -766,7 +808,7 @@ function enemyTurn(){
   document.getElementById('info').textContent = '';
 
   // Pre-calculate damage
-  enemyTurnDmg = ENEMY_DMG;
+  enemyTurnDmg = currentEnemyDmg;
   enemyTurnAbsorbed = 0;
   if(playerShield > 0){
     enemyTurnAbsorbed = Math.min(playerShield, enemyTurnDmg);
@@ -828,7 +870,7 @@ function drawEnemyTurn(){
 
     ctx.font = '18px Orbitron';
     ctx.fillStyle = '#ff3366';
-    ctx.fillText(`ATK ${ENEMY_DMG}`, cx, cy + 30);
+    ctx.fillText(`ATK ${currentEnemyDmg}`, cx, cy + 30);
   } else {
     // Show reaction — what happened
     ctx.font = '42px serif';
@@ -869,13 +911,15 @@ function drawEnemyTurn(){
 // ── Enemy Progression ──
 function advanceEnemy(){
   enemyNum++;
-  enemyMaxHP = BASE_ENEMY_HP + (enemyNum-1)*100;
+  enemyMaxHP = BASE_ENEMY_HP + (enemyNum-1)*50;
   enemyHP = enemyMaxHP;
+  currentEnemyDmg = BASE_ENEMY_DMG + (enemyNum-1)*10;
   playerHP = PLAYER_MAX_HP;
   playerShield = 0;
   updateUI();
 
   document.getElementById('e-label').textContent = `ENEMY ${enemyNum}`;
+  document.getElementById('e-atk').textContent = `ATK: ${currentEnemyDmg}`;
   document.getElementById('result-display').textContent = '';
 
   sfx.nextEnemy();
@@ -907,14 +951,17 @@ function endGame(){
 function resetGame(){
   playerHP=PLAYER_MAX_HP; playerShield=0; gold=0;
   enemyNum=1; enemyMaxHP=BASE_ENEMY_HP; enemyHP=BASE_ENEMY_HP;
+  currentEnemyDmg=BASE_ENEMY_DMG;
   slotPhase='idle'; phaseActive=false; showingResults=false;
   paused=false; document.getElementById('pause-screen').style.display='none';
   document.getElementById('pause-btn').textContent='⏸';
   particles=[]; shake=0;
+  floatingAnims=[]; slashAnims=[]; shieldAnims=[];
   updateUI();
   document.getElementById('gameover-screen').style.display='none';
   document.getElementById('result-display').textContent='';
   document.getElementById('e-label').textContent='ENEMY 1';
+  document.getElementById('e-atk').textContent=`ATK: ${BASE_ENEMY_DMG}`;
   showRollButton();
 }
 
@@ -972,8 +1019,8 @@ function drawBG(){
 function drawSlots(){
   if(slotPhase==='idle') return;
 
-  const cx=W()/2, sy=H()*0.28;
-  const slotW=70, slotH=80, gap=16;
+  const cx=W()/2, sy=H()*0.24;
+  const slotW=56, slotH=64, gap=10;
   const totalW = slotW*3 + gap*2;
   const startX = cx - totalW/2;
 
@@ -991,13 +1038,13 @@ function drawSlots(){
     ctx.fillRect(x, y, slotW, slotH);
 
     if(revealed){
-      ctx.font = '32px serif';
+      ctx.font = '24px serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = '#fff';
       ctx.fillText(ICON_SYMBOLS[slotIcons[i]], x+slotW/2, y+slotH/2);
-    } else if(slotPhase==='rolling-icons' && i===slotStep){
+    } else if(slotPhase==='rolling' && !slotRevealedIcons[i]){
       const spinIcon = ICONS[Math.floor(slotRollAnim*8)%3];
-      ctx.font = '32px serif';
+      ctx.font = '24px serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.globalAlpha = 0.4;
       ctx.fillStyle = '#fff';
@@ -1006,46 +1053,39 @@ function drawSlots(){
     }
   }
 
-  // Draw beat slots below
-  const by = sy + slotH/2 + 20;
-  const bSlotH = 36;
-  for(let i=0;i<3;i++){
+  // Beat indicators below each slot — progressive reveal with flash
+  const beatY = sy + slotH/2 + 8;
+  const lineH = 3;
+  const linePad = 4;
+  for(let i=0; i<3; i++){
+    if(slotBeatLines[i] <= 0) continue;
     const x = startX + i*(slotW+gap);
-    const y = by;
-    const revealed = slotRevealedBeats[i];
+    const bt = slotBeats[i];
+    const flash = slotBeatFlash[i] > 0 ? 0.5 + (slotBeatFlash[i]/300)*0.5 : 0.3;
 
-    ctx.strokeStyle = revealed ? '#ffaa0044' : '#ffffff11';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, slotW, bSlotH);
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.fillRect(x, y, slotW, bSlotH);
-
-    if(revealed){
-      ctx.font = '14px Orbitron';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = slotBeats[i]==='F' ? '#ffaa00' : '#ff6644';
-      ctx.fillText(slotBeats[i], x+slotW/2, y+bSlotH/2);
-    } else if(slotPhase==='rolling-beats' && i===slotStep){
-      const spinB = Math.floor(slotRollAnim*10)%2===0 ? 'F' : 'HH';
-      ctx.font = '14px Orbitron';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.globalAlpha = 0.3;
-      ctx.fillStyle = '#ffaa00';
-      ctx.fillText(spinB, x+slotW/2, y+bSlotH/2);
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  // Connector lines from icon to beat slot
-  for(let i=0;i<3;i++){
-    if(slotIcons[i] && slotBeats[i]){
-      const x = startX + i*(slotW+gap) + slotW/2;
-      ctx.strokeStyle = '#ffffff0a';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x, sy+slotH/2);
-      ctx.lineTo(x, by);
-      ctx.stroke();
+    if(bt === 'F'){
+      // Full line
+      ctx.fillStyle = `rgba(255,255,255,${flash})`;
+      ctx.fillRect(x, beatY, slotW, lineH);
+    } else if(bt === 'HH'){
+      const halfW = (slotW - linePad) / 2;
+      // First half line
+      const flash1 = slotBeatLines[i] >= 1 ? (slotBeatLines[i] === 1 && slotBeatFlash[i] > 0 ? 0.5 + (slotBeatFlash[i]/300)*0.5 : 0.3) : 0;
+      if(slotBeatLines[i] >= 1){
+        ctx.fillStyle = `rgba(255,255,255,${flash1})`;
+        ctx.fillRect(x, beatY, halfW, lineH);
+      }
+      // Second half line
+      if(slotBeatLines[i] >= 2){
+        const flash2 = slotBeatFlash[i] > 0 ? 0.5 + (slotBeatFlash[i]/300)*0.5 : 0.3;
+        ctx.fillStyle = `rgba(255,255,255,${flash2})`;
+        ctx.fillRect(x + halfW + linePad, beatY, halfW, lineH);
+      }
+    } else {
+      // Single half line centered
+      const halfW = (slotW - linePad) / 2;
+      ctx.fillStyle = `rgba(255,255,255,${flash})`;
+      ctx.fillRect(x + (slotW - halfW) / 2, beatY, halfW, lineH);
     }
   }
 }
@@ -1055,7 +1095,7 @@ function drawIndicators(){
   if(slotPhase === 'idle') return;
 
   const cx = W()/2;
-  const y = H()*0.42;
+  const y = H()*0.37;
 
   // Always show all 3 icons — values start at 0, update when slots land
   const entries = [
@@ -1117,29 +1157,22 @@ function drawGlyph(){
     const f=glyphVerts[edge.from], t=glyphVerts[edge.to];
     const isInit = ei < INIT_EDGES;
     ctx.strokeStyle = isInit ? 'rgba(255,255,255,0.06)' : dim;
-    ctx.lineWidth=12;
+    ctx.lineWidth=6;
     ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(t.x,t.y);ctx.stroke();
-    const lw = edge.beatMult<=.5 ? 1.5 : 3;
+    const lw = edge.beatMult<=.5 ? 0.75 : 1.5;
     ctx.strokeStyle = isInit ? 'rgba(255,255,255,0.15)' : mid;
     ctx.lineWidth=lw;
     ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(t.x,t.y);ctx.stroke();
-
-    if(edge.beatMult<=.5){
-      const mx=(f.x+t.x)/2, my=(f.y+t.y)/2;
-      ctx.font='9px Orbitron';ctx.fillStyle=col+'44';
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText('H',mx,my);
-    }
   });
 
   // Vertices — circles scale down to dot size at perfect timing
-  const maxR = 16;
-  const minR = 10; // matches dot core size
+  const maxR = 12;
+  const minR = 7.5; // matches dot core size
   const animWindow = BEAT * 1000; // shrink over 1 beat approach
 
   glyphVerts.forEach((v,i)=>{
     const hit = intHits[i];
-    const isInit = i < INIT_EDGES;
+    const isInit = i <= INIT_EDGES;
 
     // Calculate time distance to this vertex for shrink animation
     let timeDist = Infinity;
@@ -1168,34 +1201,34 @@ function drawGlyph(){
     }
 
     // Outer glow
-    ctx.beginPath();ctx.arc(v.x,v.y,r+6,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(v.x,v.y,r+4,0,Math.PI*2);
     ctx.fillStyle = hit ? 'rgba(255,255,255,0.08)' : col+'11';ctx.fill();
 
     // Main circle
     ctx.beginPath();ctx.arc(v.x,v.y,r,0,Math.PI*2);
     if(isInit){
       ctx.strokeStyle = '#ffffff33';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1;
     } else {
-      // Brighter stroke as circle shrinks (approaching perfect)
       const proximity = timeDist <= animWindow ? 1 - timeDist/animWindow : 0;
       const alpha = hit ? '44' : proximity > 0.5 ? 'ff' : proximity > 0 ? 'bb' : '';
       ctx.strokeStyle = hit ? '#ffffff44' : (alpha ? '#ffffff' + alpha : col);
-      ctx.lineWidth = hit ? 2.5 : 2 + proximity * 2;
+      ctx.lineWidth = hit ? 1.5 : 1.5 + proximity * 1.5;
     }
     ctx.stroke();
 
-    if(isInit){
+    if(isInit && i === 0){
+      // Start marker on first vertex only
       ctx.save(); ctx.translate(v.x, v.y);
       ctx.fillStyle = '#ffffff44';
       ctx.beginPath();
-      ctx.moveTo(-4,-5); ctx.lineTo(6,0); ctx.lineTo(-4,5); ctx.closePath();
+      ctx.moveTo(-3,-4); ctx.lineTo(4,0); ctx.lineTo(-3,4); ctx.closePath();
       ctx.fill(); ctx.restore();
-    } else if(hit){
+    } else if(hit && !isInit){
       ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fill();
-      ctx.strokeStyle='#ffffff88';ctx.lineWidth=2;
+      ctx.strokeStyle='#ffffff88';ctx.lineWidth=1.5;
       ctx.beginPath();
-      ctx.moveTo(v.x-5,v.y);ctx.lineTo(v.x-1,v.y+4);ctx.lineTo(v.x+6,v.y-4);
+      ctx.moveTo(v.x-4,v.y);ctx.lineTo(v.x-1,v.y+3);ctx.lineTo(v.x+5,v.y-3);
       ctx.stroke();
     }
   });
@@ -1203,17 +1236,19 @@ function drawGlyph(){
   // Dot
   if(phaseActive){
     const p = getDotPos();
-    ctx.beginPath();ctx.arc(p.x,p.y,22,0,Math.PI*2);
-    const tg=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,22);
+    const px = p.x, py = p.y;
+
+    ctx.beginPath();ctx.arc(px,py,16,0,Math.PI*2);
+    const tg=ctx.createRadialGradient(px,py,0,px,py,16);
     tg.addColorStop(0,'rgba(0,255,170,0.5)');tg.addColorStop(1,'transparent');
     ctx.fillStyle=tg;ctx.fill();
-    ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
-    ctx.beginPath();ctx.arc(p.x,p.y,6,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    ctx.beginPath();ctx.arc(px,py,7.5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+    ctx.beginPath();ctx.arc(px,py,4.5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
   }
 }
 
 function drawEnemy(){
-  const cx=W()/2,cy=H()*0.13;
+  const cx=W()/2,cy=H()*0.08;
   const pulse=Math.sin(glow*2)*3;
   const sz=25+pulse;
   const hpR=enemyHP/enemyMaxHP;
@@ -1282,31 +1317,43 @@ function update(ts){
     updateSlots(dt);
 
     // Dot movement
-    if(phaseActive && edgeDurs.length>0){
+    if(phaseActive && edgeDurs.length>0 && endPauseTimer <= 0){
       const dur = edgeDurs[dotSeg];
       dotProg += (1/dur)*(dt/1000);
       if(dotProg >= 1){
         dotProg -= 1;
         dotSeg++;
-        // Play sound matching the vertex crossed
-        if(dotSeg >= INIT_EDGES && dotSeg < INIT_EDGES + 3){
-          sfx.slotLand(slotIcons[dotSeg - INIT_EDGES]);
-        } else {
-          sfx.tick();
+        // Play sound only for missed vertices — tapped ones already played via applyTapImmediate
+        if(!intHits[dotSeg]){
+          const crossedIconIdx = iconDotVertices.indexOf(dotSeg);
+          if(crossedIconIdx >= 0){
+            sfx.slotLand(slotIcons[crossedIconIdx]);
+          } else {
+            sfx.tick();
+          }
         }
         if(dotSeg >= glyphEdges.length){
           dotSeg = glyphEdges.length-1;
           dotProg = 1;
-          for(let i=0;i<totalInts;i++){
-            if(!intHits[i]) turnResults.push('MISS');
-          }
-          finishPlaying();
+          // Start 1-beat pause at the end
+          endPauseTimer = BEAT * 1000;
         }
       }
     }
 
-    // Result animation
-    updateResultAnim(dt);
+    // End pause — wait 1 beat at final vertex then finish
+    if(endPauseTimer > 0){
+      endPauseTimer -= dt;
+      if(endPauseTimer <= 0){
+        for(let i=0;i<totalInts;i++){
+          if(!intHits[i]) turnResults.push('MISS');
+        }
+        finishPlaying();
+      }
+    }
+
+    // Floating animations (slash, shield, coins)
+    updateFloatingAnims(dt);
 
     // Enemy turn animation
     updateEnemyTurn(dt);
@@ -1327,7 +1374,7 @@ function update(ts){
   drawParticles();
 
   ctx.restore();
-  drawResultAnim();
+  drawFloatingAnims();
   drawEnemyTurn();
   requestAnimationFrame(update);
 }
