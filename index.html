@@ -162,7 +162,8 @@ function drawIcon(name, cx, cy, size){
 const BASE_BPM = 85;
 let currentBPM = BASE_BPM;
 let BEAT = 60/BASE_BPM;
-function updateTempo(){ currentBPM=BASE_BPM+Math.floor((enemyNum-1)/2)*10; BEAT=60/currentBPM; }
+let slotCount = 3;
+function updateTempo(){ currentBPM=BASE_BPM+(enemyNum-1)*10; BEAT=60/currentBPM; slotCount=enemyNum>=5?4:3; }
 const PLAYER_MAX_HP = 300;
 const BASE_ENEMY_HP = 100;
 const BASE_ENEMY_DMG = 50;
@@ -174,11 +175,11 @@ let playerHP=PLAYER_MAX_HP, playerShield=0, gold=0;
 let enemyMaxHP=BASE_ENEMY_HP, enemyHP=BASE_ENEMY_HP, enemyNum=1;
 let currentEnemyDmg=BASE_ENEMY_DMG;
 
-let slotIcons=[null,null,null], slotBeats=[null,null,null];
+let slotIcons=[], slotBeats=[];
 let slotPhase='idle', slotTimer=0, slotRollAnim=0;
 let slotSchedule=[], slotScheduleTime=0, slotScheduleIdx=0;
-let slotRevealedIcons=[false,false,false];
-let slotBeatLines=[0,0,0], slotBeatFlash=[0,0,0];
+let slotRevealedIcons=[];
+let slotBeatLines=[], slotBeatFlash=[];
 let iconDotVertices=[];
 
 let glyphVerts=[], glyphEdges=[], edgeDurs=[];
@@ -243,8 +244,8 @@ function showRollButton(){
   $('roll-btn').style.display='block';
   $('result-display').textContent='';
   slotPhase='waiting';
-  slotRevealedIcons=[false,false,false];
-  slotBeatLines=[0,0,0]; slotBeatFlash=[0,0,0];
+  slotRevealedIcons=new Array(slotCount).fill(false);
+  slotBeatLines=new Array(slotCount).fill(0); slotBeatFlash=new Array(slotCount).fill(0);
   baseValues={sword:0,shield:0,gold:0};
   tapValues={sword:0,shield:0,gold:0};
   isAllPerfect=false;
@@ -253,9 +254,9 @@ function showRollButton(){
 function startSlotPhase(){
   $('roll-btn').style.display='none';
   $('result-display').textContent='';
-  slotIcons=[rollIcon(),rollIcon(),rollIcon()];
-  slotBeats=[rollBeat(),rollBeat(),rollBeat()];
-  slotRevealedIcons=[false,false,false];
+  slotIcons=Array.from({length:slotCount},rollIcon);
+  slotBeats=Array.from({length:slotCount},rollBeat);
+  slotRevealedIcons=new Array(slotCount).fill(false);
   slotPhase='rolling'; slotRollAnim=0;
   phaseActive=false; showingResults=false;
 
@@ -267,7 +268,7 @@ function startSlotPhase(){
   // Build reveal schedule
   const edges=[1]; let vp=1;
   const iconVerts=[];
-  for(let i=0;i<3;i++){
+  for(let i=0;i<slotCount;i++){
     iconVerts.push(vp);
     const bt=slotBeats[i];
     if(bt==='F'){ edges.push(1); vp+=1; }
@@ -279,13 +280,13 @@ function startSlotPhase(){
   // Map HH intermediate vertices to their slot
   const vertToSlot={};
   let vc=1;
-  for(let i=0;i<3;i++){
+  for(let i=0;i<slotCount;i++){
     if(slotBeats[i]==='HH') vertToSlot[vc+1]=i;
     vc+=(slotBeats[i]==='HH'?2:1);
   }
 
   slotSchedule=[{time:0,action:'init',slot:-1}];
-  slotBeatLines=[0,0,0]; slotBeatFlash=[0,0,0];
+  slotBeatLines=new Array(slotCount).fill(0); slotBeatFlash=new Array(slotCount).fill(0);
   let t=0;
   for(let e=0;e<edges.length;e++){
     t+=edges[e]*BEAT*1000;
@@ -317,14 +318,14 @@ function updateSlots(dt){
       }
       slotScheduleIdx++;
     }
-    for(let i=0;i<3;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
+    for(let i=0;i<slotCount;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(slotScheduleIdx>=slotSchedule.length){
       slotPhase='show-result'; slotTimer=BEAT*800;
-      if(slotIcons[0]===slotIcons[1]&&slotIcons[1]===slotIcons[2]) sfx.triple();
+      if(slotIcons.every(ic=>ic===slotIcons[0])) sfx.triple();
     }
   } else if(slotPhase==='show-result'){
     slotTimer-=dt;
-    for(let i=0;i<3;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
+    for(let i=0;i<slotCount;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(slotTimer<=0) startGlyphPhase();
   }
 }
@@ -333,7 +334,7 @@ function updateSlots(dt){
 function buildRhythmFromSlots(){
   const edges=[1]; // init edge
   iconDotVertices=[]; let vp=1;
-  for(let i=0;i<3;i++){
+  for(let i=0;i<slotCount;i++){
     iconDotVertices.push(vp);
     const bt=slotBeats[i];
     if(bt==='F'){ edges.push(1); vp+=1; }
@@ -417,12 +418,13 @@ function startGlyphPhase(){
 
   // Set base values now — indicators jump from 0 to base on init beat
   baseValues={sword:0,shield:0,gold:0};
-  const triple=slotIcons[0]===slotIcons[1]&&slotIcons[1]===slotIcons[2];
-  if(triple){
+  const allSame=slotIcons.every(ic=>ic===slotIcons[0]);
+  const SINGLE_BASE={sword:20,shield:15,gold:1};
+  if(allSame){
     const ic=slotIcons[0];
-    baseValues[ic]=ic==='gold'?6:60;
+    baseValues[ic]=Math.round(SINGLE_BASE[ic]*slotCount*1.5);
   } else {
-    slotIcons.forEach(ic=>{ baseValues[ic]+=(ic==='gold'?1:10); });
+    slotIcons.forEach(ic=>{ baseValues[ic]+=SINGLE_BASE[ic]; });
   }
 
   play('slot',1,Math.pow(2,streakCount*2/12));
@@ -685,9 +687,9 @@ function drawBG(){
 function drawSlots(){
   if(slotPhase==='idle') return;
   const cx=W()/2, sy=H()*.28, sw=56, sh=64, gap=10;
-  const sx=cx-(sw*3+gap*2)/2;
+  const sx=cx-(sw*slotCount+gap*(slotCount-1))/2;
 
-  for(let i=0;i<3;i++){
+  for(let i=0;i<slotCount;i++){
     const x=sx+i*(sw+gap), y=sy-sh/2, rev=slotRevealedIcons[i];
     ctx.strokeStyle=rev?'#cccccc':'#ffffff22';
     ctx.lineWidth=rev?2:1; ctx.strokeRect(x,y,sw,sh);
@@ -700,7 +702,7 @@ function drawSlots(){
 
   // Beat indicators
   const by=sy+sh/2+8, lh=3, lp=4;
-  for(let i=0;i<3;i++){
+  for(let i=0;i<slotCount;i++){
     if(slotBeatLines[i]<=0) continue;
     const x=sx+i*(sw+gap), bt=slotBeats[i];
     const fl=slotBeatFlash[i]>0?.5+(slotBeatFlash[i]/300)*.5:.3;
@@ -717,7 +719,7 @@ function drawIndicators(){
   if(slotPhase==='idle') return;
   const cx=W()/2, y=H()*.73;
   const names=['sword','shield','gold'];
-  const gap=Math.min(140,W()*.35), sx=cx-gap;
+  const gap=Math.min(slotCount>3?100:140,W()*.35), sx=cx-gap*(names.length-1)/2;
 
   names.forEach((n,i)=>{
     const x=sx+i*gap, bv=baseValues[n], tv=tapValues[n], has=bv>0||tv>0;
