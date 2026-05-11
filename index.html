@@ -48,23 +48,25 @@ canvas{display:block;width:100%;height:100%}
 #pause-btn{position:absolute;top:12px;left:12px;font-size:20px;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid #ffffff22;color:#ffffff88;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;line-height:1}
 #pause-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
 
-#shop-screen{display:none;flex-direction:column;align-items:center;padding:20px 15px;overflow-y:auto}
-#shop-screen h2{font:20px 'Orbitron';color:#ffaa00;margin-bottom:8px}
+#shop-screen{display:none;flex-direction:column;align-items:center;padding:20px 15px;overflow-y:auto;background:#1c1c26 !important}
+#shop-screen h2{font:20px 'Orbitron';color:#fff;margin-bottom:8px}
 #shop-gold-display{font:14px 'Orbitron';color:#ffaa00;margin-bottom:12px}
 .shop-grid{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;justify-content:center}
 .shop-card{background:rgba(255,255,255,0.04);border:1.5px solid #ffffff22;border-radius:6px;padding:10px;width:120px;text-align:center;cursor:pointer;transition:all .2s}
 .shop-card:hover{border-color:#00ffaa;background:rgba(0,255,170,0.05)}
 .shop-card.sold{opacity:0.3;pointer-events:none}
 .shop-card .icon{font-size:28px;margin-bottom:4px}
-.shop-card .name{font:10px 'Orbitron';color:#e0e0e0;margin-bottom:3px}
-.shop-card .desc{font:9px 'Rajdhani';color:#888;margin-bottom:6px;min-height:24px}
+.shop-card .name{font:10px 'Orbitron';color:#fff;margin-bottom:3px}
+.shop-card .desc{font:9px 'Rajdhani';color:#ccc;margin-bottom:6px;min-height:24px}
 .shop-card .cost{font:11px 'Orbitron';color:#ffaa00}
 #reroll-btn{font:10px 'Orbitron';padding:8px 20px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;margin-bottom:12px}
 .inv-section{width:100%;max-width:380px;margin-bottom:10px}
-.inv-label{font:9px 'Orbitron';color:#666;margin-bottom:4px;text-align:left}
+.inv-label{font:9px 'Orbitron';color:#aaa;margin-bottom:4px;text-align:left}
 .inv-slots{display:flex;gap:5px}
 .inv-slot{width:36px;height:36px;border:1px solid #ffffff22;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.02)}
 .inv-slot.filled{border-color:#00ffaa44}
+.inv-slot.filled[style*='cursor']{border-color:#ffaa0044}
+.inv-slot.filled[style*='cursor']:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
 #shop-continue{font:14px 'Orbitron';padding:12px 40px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:10px}
 #usable-bar{position:absolute;bottom:9%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
 .usable-btn{width:32px;height:32px;border:1px solid #ffffff22;border-radius:4px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;color:#fff;transition:all .2s}
@@ -122,13 +124,14 @@ canvas{display:block;width:100%;height:100%}
     <div class="shop-grid" id="shop-grid"></div>
     <button id="reroll-btn" onclick="rerollShop()">🎲 Reroll (10g)</button>
     <div class="inv-section">
-      <div class="inv-label">PASSIVES (5 slots)</div>
+      <div class="inv-label">SLOT INVENTORY</div>
       <div class="inv-slots" id="inv-passives"></div>
     </div>
     <div class="inv-section">
       <div class="inv-label">USABLES (3 slots)</div>
       <div class="inv-slots" id="inv-usables"></div>
     </div>
+    <div id="sell-bar" style="display:none;margin-bottom:8px"><span id="sell-info" style="font:10px Orbitron;color:#ff9999;margin-right:8px"></span><button id="sell-btn" onclick="confirmSell()" style="font:10px Orbitron;padding:6px 16px;background:0 0;border:1.5px solid #ff3366;color:#ff3366;cursor:pointer;border-radius:3px">SELL</button><button onclick="deselectItem()" style="font:10px Orbitron;padding:6px 12px;background:0 0;border:1.5px solid #666;color:#888;cursor:pointer;border-radius:3px;margin-left:5px">✕</button></div>
     <button id="shop-continue" onclick="closeShop()">CONTINUE →</button>
   </div>
   <div id="usable-bar">
@@ -178,7 +181,7 @@ function play(name, vol=1, pitch=1){
 function preloadAudio(){
   ensureAC();
   ['Slot','Sword','Shield','Coin','Snare'].forEach(f=>loadAudio(f.toLowerCase(), f+'.wav'));
-  loadAudio('bow_charge','bow_charge.wav'); loadAudio('bow_shoot','Bow_Shoot.wav');
+  loadAudio('bow_charge','Bow_charge.wav'); loadAudio('bow_shoot','Bow_Shoot.wav');
 }
 
 
@@ -254,10 +257,12 @@ const SHOP_POOL = [
   {id:'health_potion',name:'Health Potion',desc:'+100 HP',icon:'🧪',type:'usable',baseCost:20,inc:0},
   {id:'bow',name:'Bow',desc:'New icon type\nDouble HH chance',icon:'🏹',type:'special',baseCost:50,inc:0},
 ];
-let upgradeCounts={sword:0,shield:0,hp:0};
-let passiveSlots=[]; // max 5, [{id,icon,name}]
+let upgradeCounts={sword:0,shield:0,hp:0,bow:0};
+let passiveSlots=[{id:'sword',icon:'⚔',name:'Sword',cost:0},{id:'shield',icon:'🛡',name:'Shield',cost:0},{id:'gold',icon:'💰',name:'Coin',cost:0}]; // max 5
 let usableSlots=[null,null,null]; // max 3, [{id,icon,name}] or null
 let bowUnlocked=false;
+let bowCharge=0, bowMaxCharge=300, bowShotDmg=0, bowShooting=false;
+let bowMatchBonus=[];
 let rerollCount=0;
 let shopItems=[];
 let shopSold=[];
@@ -266,6 +271,7 @@ function getItemCost(item){
   if(item.id==='upgrade_sword') return item.baseCost+item.inc*upgradeCounts.sword;
   if(item.id==='upgrade_shield') return item.baseCost+item.inc*upgradeCounts.shield;
   if(item.id==='upgrade_hp') return item.baseCost+item.inc*upgradeCounts.hp;
+  if(item.id==='upgrade_bow') return item.baseCost+item.inc*upgradeCounts.bow;
   return item.baseCost;
 }
 
@@ -274,7 +280,7 @@ function getRerollCost(){ return 10+rerollCount*5; }
 function canBuyItem(item){
   const cost=getItemCost(item);
   if(gold<cost) return false;
-  if(item.type==='passive'&&passiveSlots.length>=5) return false;
+  if(item.type==='passive'&&item.id!=='upgrade_sword'&&item.id!=='upgrade_shield'&&item.id!=='upgrade_hp'&&passiveSlots.length>=5) return false;
   if(item.type==='usable'){
     const freeSlot=usableSlots.findIndex(s=>s===null);
     if(freeSlot<0) return false;
@@ -291,30 +297,39 @@ function buyItem(idx){
   shopSold[idx]=true;
 
   if(item.id==='upgrade_sword'){
-    upgradeCounts.sword++; passiveSlots.push({id:item.id,icon:'⚔',name:'Sword+'+upgradeCounts.sword});
+    upgradeCounts.sword++;
   } else if(item.id==='upgrade_shield'){
-    upgradeCounts.shield++; passiveSlots.push({id:item.id,icon:'🛡',name:'Shield+'+upgradeCounts.shield});
+    upgradeCounts.shield++;
   } else if(item.id==='upgrade_hp'){
     upgradeCounts.hp++;
     PLAYER_MAX_HP=Math.floor(300*(1+upgradeCounts.hp*0.1));
     playerHP=Math.min(playerHP+30,PLAYER_MAX_HP);
-    passiveSlots.push({id:item.id,icon:'❤',name:'HP+'+upgradeCounts.hp});
   } else if(item.id==='health_potion'){
     const freeSlot=usableSlots.findIndex(s=>s===null);
-    usableSlots[freeSlot]={id:'health_potion',icon:'🧪',name:'Potion'};
+    usableSlots[freeSlot]={id:'health_potion',icon:'🧪',name:'Potion',cost:20};
+  } else if(item.id==='upgrade_bow'){
+    upgradeCounts.bow++;
   } else if(item.id==='bow'){
     bowUnlocked=true;
-    passiveSlots.push({id:'bow',icon:'🏹',name:'Bow'});
+    passiveSlots.push({id:'bow',icon:'🏹',name:'Bow',cost:50});
   }
   updateUI();
   renderShop();
 }
 
 function generateShopItems(){
-  const pool=[...SHOP_POOL];
+  const pool=SHOP_POOL.filter(it=>{
+    if(it.requires==='bow'&&!bowUnlocked) return false;
+    if(it.id==='bow'&&bowUnlocked) return false;
+    return true;
+  });
   shopItems=[]; shopSold=[false,false,false];
+  const used=new Set();
   for(let i=0;i<3;i++){
-    const pick=pool[Math.floor(Math.random()*pool.length)];
+    const avail=pool.filter(it=>!used.has(it.id));
+    if(avail.length===0) break;
+    const pick=avail[Math.floor(Math.random()*avail.length)];
+    used.add(pick.id);
     shopItems.push(pick);
   }
 }
@@ -342,25 +357,87 @@ function renderShop(){
     grid.appendChild(card);
   });
   $('reroll-btn').textContent='🎲 Reroll ('+getRerollCost()+'g)';
-  // Render inventory
+  // Render inventory with select-to-sell
   const pDiv=$('inv-passives'); pDiv.innerHTML='';
   for(let i=0;i<5;i++){
     const s=document.createElement('div');
-    s.className='inv-slot'+(passiveSlots[i]?' filled':'');
-    s.textContent=passiveSlots[i]?passiveSlots[i].icon:'';
-    s.title=passiveSlots[i]?passiveSlots[i].name:'';
+    const item=passiveSlots[i];
+    const sel=selectedItem&&selectedItem.type==='passive'&&selectedItem.idx===i;
+    s.className='inv-slot'+(item?' filled':'')+(sel?' selected':'');
+    s.textContent=item?item.icon:'';
+    s.title=item?item.name:'';
+    if(item&&item.cost>0){
+      s.style.cursor='pointer';
+      s.onclick=(()=>{const idx=i; return ()=>selectItem('passive',idx)})();
+    }
+    if(sel) s.style.borderColor='#ff3366';
     pDiv.appendChild(s);
   }
   const uDiv=$('inv-usables'); uDiv.innerHTML='';
   for(let i=0;i<3;i++){
     const s=document.createElement('div');
-    s.className='inv-slot'+(usableSlots[i]?' filled':'');
-    s.textContent=usableSlots[i]?usableSlots[i].icon:'';
+    const item=usableSlots[i];
+    const sel=selectedItem&&selectedItem.type==='usable'&&selectedItem.idx===i;
+    s.className='inv-slot'+(item?' filled':'')+(sel?' selected':'');
+    s.textContent=item?item.icon:'';
+    if(item&&item.cost>0){
+      s.style.cursor='pointer';
+      s.onclick=(()=>{const idx=i; return ()=>selectItem('usable',idx)})();
+    }
+    if(sel) s.style.borderColor='#ff3366';
     uDiv.appendChild(s);
   }
 }
 
+let selectedItem=null; // {type:'passive'|'usable', idx:number}
+
+function selectItem(type, idx){
+  const item=type==='passive'?passiveSlots[idx]:usableSlots[idx];
+  if(!item||item.cost<=0) return;
+  selectedItem={type,idx};
+  const refund=Math.floor(item.cost/2);
+  $('sell-info').textContent=item.name+' → 💰'+refund;
+  $('sell-bar').style.display='flex';
+  $('sell-bar').style.alignItems='center';
+  $('sell-bar').style.justifyContent='center';
+  renderShop(); // re-render to highlight
+}
+
+function deselectItem(){
+  selectedItem=null;
+  $('sell-bar').style.display='none';
+  renderShop();
+}
+
+function confirmSell(){
+  if(!selectedItem) return;
+  if(selectedItem.type==='passive') sellPassive(selectedItem.idx);
+  else sellUsable(selectedItem.idx);
+  selectedItem=null;
+  $('sell-bar').style.display='none';
+}
+
+function sellPassive(idx){
+  const item=passiveSlots[idx];
+  if(!item||item.cost<=0) return;
+  const refund=Math.floor(item.cost/2);
+  if(item.id==='bow') bowUnlocked=false;
+  gold+=refund;
+  passiveSlots.splice(idx,1);
+  updateUI(); renderShop();
+}
+
+function sellUsable(idx){
+  const item=usableSlots[idx];
+  if(!item||item.cost<=0) return;
+  const refund=Math.floor(item.cost/2);
+  gold+=refund;
+  usableSlots[idx]=null;
+  updateUI(); renderShop();
+}
+
 function openShop(){
+  selectedItem=null; $('sell-bar').style.display='none';
   generateShopItems();
   renderShop();
   $('shop-screen').style.display='flex';
@@ -401,6 +478,10 @@ function updateUsableBar(){
 
 // Upgrade getters
 function getSwordBase(){ return Math.floor(SINGLE_BASE.sword*(1+upgradeCounts.sword*0.1)); }
+function getBowBase(){ return Math.floor(SINGLE_BASE.bow*(1+upgradeCounts.bow*0.1)); }
+function getBowMaxCharge(){ return Math.floor(300*(1+upgradeCounts.bow*0.1)); }
+function getBowChargePerHalf(){ return Math.floor(15*(1+upgradeCounts.bow*0.1)); }
+function getBowTap(rating){ return (TAP_BONUS.bow[rating]||0)+upgradeCounts.bow*2; }
 function getShieldBase(){ return Math.floor(SINGLE_BASE.shield*(1+upgradeCounts.shield*0.1)); }
 function getSwordTap(rating){ return (TAP_BONUS.sword[rating]||0)+upgradeCounts.sword*2; }
 function getShieldTap(rating){ return (TAP_BONUS.shield[rating]||0)+upgradeCounts.shield*2; }
@@ -425,7 +506,7 @@ let glyphVerts=[], glyphEdges=[], edgeDurs=[];
 let dotSeg=0, dotProg=0, intHits=[], vertexRatings=[], totalInts=0;
 let turnResults=[], phaseActive=false, showingResults=false, endPauseTimer=0;
 
-let baseValues={sword:0,shield:0,gold:0}, tapValues={sword:0,shield:0,gold:0};
+let baseValues={sword:0,shield:0,gold:0,bow:0}, tapValues={sword:0,shield:0,gold:0,bow:0};
 let allPerfectSoFar=true, isAllPerfect=false;
 
 let streakCount=0, streakTextTimer=0, streakActive=false;
@@ -448,7 +529,7 @@ addEventListener('resize',resize); resize();
 const W=()=>gameWrap.clientWidth, H=()=>gameWrap.clientHeight;
 
 // ── Helpers ──
-const rollIcon=()=>ICONS[Math.floor(Math.random()*3)];
+const rollIcon=()=>{ const pool=bowUnlocked?['sword','shield','gold','bow']:ICONS; return pool[Math.floor(Math.random()*pool.length)]; };
 function rollBeat(){ const r=Math.random(); return r<.4?'F':r<.75?'HH':'H'; }
 const $=id=>document.getElementById(id);
 
@@ -487,8 +568,8 @@ function showRollButton(){
   activeSlots=slotCount; // reset to base (no streak bonus)
   slotRevealedIcons=new Array(activeSlots).fill(false);
   slotBeatLines=new Array(activeSlots).fill(0); slotBeatFlash=new Array(activeSlots).fill(0);
-  baseValues={sword:0,shield:0,gold:0};
-  tapValues={sword:0,shield:0,gold:0};
+  baseValues={sword:0,shield:0,gold:0,bow:0};
+  tapValues={sword:0,shield:0,gold:0,bow:0};
   isAllPerfect=false;
 }
 
@@ -499,15 +580,15 @@ function startSlotPhase(){
   slotIcons=Array.from({length:activeSlots},rollIcon);
   slotBeats=slotIcons.map(ic=>{
     if(ic==='sword') return 'F';
-    if(ic==='bow'){ const r=Math.random(); return r<0.296?'F':r<0.815?'HH':'H'; }
+    if(ic==='bow'){ const r=Math.random(); return r<0.25?'F':r<0.75?'HH':'H'; }
     return rollBeat();
   });
   slotRevealedIcons=new Array(activeSlots).fill(false);
   slotPhase='rolling'; slotRollAnim=0;
   phaseActive=false; showingResults=false;
 
-  baseValues={sword:0,shield:0,gold:0};
-  tapValues={sword:0,shield:0,gold:0};
+  baseValues={sword:0,shield:0,gold:0,bow:0};
+  tapValues={sword:0,shield:0,gold:0,bow:0};
   allPerfectSoFar=true; isAllPerfect=false;
 
   // Pre-calculate per-slot values (progressive match)
@@ -521,6 +602,14 @@ function startSlotPhase(){
   } else {
     for(let i=0;i<activeSlots;i++)
       slotValues.push({icon:slotIcons[i],value:SINGLE_BASE[slotIcons[i]]});
+  }
+
+  // Bow match bonuses
+  bowMatchBonus=new Array(activeSlots).fill(0);
+  bowCharge=0; bowShotDmg=0; bowShooting=false;
+  if(allSame&&slotIcons[0]==='bow'){
+    const bonuses=[0,0,30,30,40,50]; // idx 2=+30, 3=+30, 4=+40, 5=+50
+    for(let i=2;i<activeSlots&&i<bonuses.length;i++) bowMatchBonus[i]=bonuses[i];
   }
 
   // Build reveal schedule
@@ -558,18 +647,44 @@ function startSlotPhase(){
 
 function applySlotReveal(idx){
   const sv=slotValues[idx];
+  const ic=sv.icon;
+  const bt=slotBeats[idx];
+
+  if(ic==='bow'){
+    // Bow: H/HH = charge, F = shoot
+    if(bt==='H'||bt==='HH'){
+      // Half beat: charge
+      const chg=getBowChargePerHalf()+bowMatchBonus[idx];
+      bowCharge+=chg; bowShooting=false;
+      if(bowCharge>getBowMaxCharge()){ bowCharge=0; } // overflow reset
+      baseValues.bow+=chg;
+    } else if(bt==='F'){
+      // Full beat: shoot
+      if(!bowShooting){
+        bowShotDmg=bowCharge+10;
+        bowShooting=true;
+      }
+      const dmg=bowShotDmg;
+      enemyHP=Math.max(0,enemyHP-dmg);
+      shake=Math.min(dmg/10,5);
+      spawnSlashProjectile(dmg);
+      baseValues.bow+=dmg;
+    }
+    updateUI(); return;
+  }
+
   let val=sv.value;
-  if(sv.icon==='sword') val=Math.floor(val*(1+upgradeCounts.sword*0.1));
-  else if(sv.icon==='shield') val=Math.floor(val*(1+upgradeCounts.shield*0.1));
-  baseValues[sv.icon]+=val;
-  if(sv.icon==='sword'||sv.icon==='bow'){
+  if(ic==='sword') val=Math.floor(val*(1+upgradeCounts.sword*0.1));
+  else if(ic==='shield') val=Math.floor(val*(1+upgradeCounts.shield*0.1));
+  baseValues[ic]+=val;
+  if(ic==='sword'){
     enemyHP=Math.max(0,enemyHP-val);
     shake=Math.min(val/10,4);
     spawnSlashProjectile(val);
-  } else if(sv.icon==='shield'){
+  } else if(ic==='shield'){
     playerShield+=val;
     shieldAnims.push({life:1,x:W()/2,y:H()*.92});
-  } else if(sv.icon==='gold'){
+  } else if(ic==='gold'){
     gold+=val;
     spawnCoins(W()/2,H()*.5,'PERFECT');
   }
@@ -595,7 +710,13 @@ function updateSlots(dt){
       } else if(ev.action==='init'){ play('slot',1,Math.pow(2,streakCount*2/12));
       } else if(ev.action==='snare'){
         const sic=ev.slot>=0?slotIcons[ev.slot]:null;
-        if(sic==='bow') play('bow_shoot'); else sfx.tick();
+        if(sic==='bow'){
+          play('bow_charge');
+          const chg=getBowChargePerHalf();
+          bowCharge+=chg; bowShooting=false;
+          if(bowCharge>getBowMaxCharge()) bowCharge=0;
+          baseValues.bow+=chg;
+        } else sfx.tick();
         if(ev.slot>=0){ slotBeatLines[ev.slot]=2; slotBeatFlash[ev.slot]=300; }
       }
       slotScheduleIdx++;
@@ -637,7 +758,7 @@ function buildGlyph(edgeMults, cx, cy){
   const gameEdges=n-1;
   const gameW=edgeMults.slice(1).reduce((a,b)=>a+b,0);
   const maxW=W()-60;
-  const maxVH=H()*0.35;
+  const maxVH=H()*0.22;
   const baseUnit=140*(3/Math.max(3,activeSlots));
   const estH=gameW*Math.cos(baseAngle)*(shapeType===2?.6:1);
   const estV=gameW*Math.sin(baseAngle);
@@ -707,7 +828,7 @@ function spawnSlashProjectile(damage){
 function startGlyphPhase(){
   slotPhase='playing';
   const em=buildRhythmFromSlots();
-  const g=buildGlyph(em, W()/2, H()*0.58);
+  const g=buildGlyph(em, W()/2, H()*0.55);
   glyphVerts=g.verts; glyphEdges=g.edges; edgeDurs=g.durs;
   totalInts=g.verts.length;
   dotSeg=0; dotProg=0; endPauseTimer=0;
@@ -715,7 +836,7 @@ function startGlyphPhase(){
   vertexRatings=new Array(totalInts).fill(null);
   intHits[0]=true;
   turnResults=[]; phaseActive=true;
-  tapValues={sword:0,shield:0,gold:0};
+  tapValues={sword:0,shield:0,gold:0,bow:0};
   allPerfectSoFar=true; isAllPerfect=false;
   play('slot',1,Math.pow(2,streakCount*2/12));
 }
@@ -780,9 +901,28 @@ function applyTap(vi, rating){
     let val=TAP_BONUS[icon][rating]||0;
     if(icon==='sword') val=getSwordTap(rating);
     else if(icon==='shield') val=getShieldTap(rating);
+    else if(icon==='bow'){
+      const dotBeat=slotBeats[ii];
+      if(dotBeat==='F'){
+        // Full beat: shoot — direct damage
+        val={PERFECT:10,GREAT:5,COOL:2}[rating]||0;
+        tapValues.bow+=val;
+        enemyHP=Math.max(0,enemyHP-val);
+        if(rating==='PERFECT') shake=Math.min(val,3);
+        spawnSlashProjectile(val);
+        play('bow_shoot',vol);
+      } else {
+        // Half beat (H or HH icon dot): charge
+        const chg={PERFECT:5,GREAT:2,COOL:1}[rating]||0;
+        bowCharge+=chg;
+        if(bowCharge>getBowMaxCharge()) bowCharge=0;
+        play('bow_charge',vol);
+      }
+      updateUI(); return;
+    }
     tapValues[icon]+=val;
-    if(rating==='PERFECT') shake=Math.min(val,3);
-    if(icon==='sword'||icon==='bow'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); spawnSlashProjectile(val); play('sword',vol); }
+    if(rating==='PERFECT') shake=Math.min(Math.max(val,2),3);
+    if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); spawnSlashProjectile(val); play('sword',vol); }
     else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); play('shield',vol); }
     else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin',vol); }
   } else if(vi>0){
@@ -791,6 +931,7 @@ function applyTap(vi, rating){
     if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); spawnSlashProjectile(ab); }
     if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.92}); }
     if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating); }
+    if(baseValues.bow>0){ bowCharge+=ab; if(bowCharge>getBowMaxCharge()) bowCharge=0; }
     updateUI(); play('snare',vol*0.5);
   }
 }
@@ -1031,12 +1172,28 @@ function drawIndicators(){
 
   names.forEach((n,i)=>{
     const x=sx+i*gap, bv=baseValues[n], tv=tapValues[n], has=bv>0||tv>0;
-    ctx.globalAlpha=has?1:.3; drawIcon(n,x-45,y,22);
-    ctx.font='16px Orbitron'; ctx.textAlign='left'; ctx.textBaseline='middle';
-    ctx.fillStyle=has?ICON_COLORS[n]+'cc':'#ffffff22'; ctx.fillText(`${bv}`,x-28,y);
-    ctx.font='14px Orbitron'; ctx.fillStyle=tv>0?'#00ffaacc':'#ffffff22'; ctx.fillText(`+${tv}`,x+2,y);
+    ctx.globalAlpha=has?1:.3; drawIcon(n,x-36,y,18);
+    ctx.font='13px Orbitron'; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillStyle=has?ICON_COLORS[n]+'cc':'#ffffff22'; ctx.fillText(`${bv}`,x-22,y);
+    ctx.font='11px Orbitron'; ctx.fillStyle=tv>0?'#00ffaacc':'#ffffff22'; ctx.fillText(`+${tv}`,x+2,y);
     ctx.globalAlpha=1;
   });
+
+  // Bow charge bar
+  if(bowUnlocked){
+    const bx=W()-35, by=H()*.40, bh=H()*.30, bw=8;
+    const pct=Math.min(1,bowCharge/getBowMaxCharge());
+    ctx.globalAlpha=0.6;
+    ctx.fillStyle='#1a1a24'; ctx.fillRect(bx,by,bw,bh);
+    ctx.strokeStyle='#88ff4444'; ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
+    const fillH=bh*pct;
+    ctx.fillStyle=pct>0.8?'#ff4444':'#88ff44';
+    ctx.fillRect(bx,by+bh-fillH,bw,fillH);
+    ctx.globalAlpha=0.4;
+    ctx.font='7px Orbitron'; ctx.textAlign='center'; ctx.fillStyle='#fff';
+    ctx.fillText(Math.floor(bowCharge),bx+bw/2,by-4);
+    ctx.globalAlpha=1;
+  }
 }
 
 function drawGlyph(){
