@@ -22,7 +22,7 @@ canvas{display:block;width:100%;height:100%}
 #e-hp-fill{background:linear-gradient(90deg,#ff3366,#cc2255);width:100%}
 #e-hp-txt{font:9px 'Orbitron',monospace;color:#ff3366;text-shadow:0 0 8px #ff336666;margin-bottom:1px}
 #e-atk{font:8px 'Orbitron',monospace;color:#ff336666;letter-spacing:1px}
-#player-section{position:absolute;bottom:3%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:300px;pointer-events:none}
+#player-section{position:absolute;bottom:1.5%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:300px;pointer-events:none}
 #p-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;padding:0 4px}
 #p-hp-txt{font:10px 'Orbitron',monospace;color:#00ffaa;text-shadow:0 0 8px #00ffaa66}
 #gold-display{font:10px 'Orbitron',monospace;color:#ffaa00;text-shadow:0 0 8px #ffaa0044}
@@ -32,7 +32,7 @@ canvas{display:block;width:100%;height:100%}
 #p-shield-fill{background:linear-gradient(90deg,#4488ff,#2266cc);width:0%}
 #p-shield-txt{font:7px 'Orbitron',monospace;color:#4488ff88}
 #phase-label{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);font:26px/1 'Orbitron',monospace;font-weight:900;color:#fff;text-shadow:0 0 30px currentColor;opacity:0;transition:opacity .3s;pointer-events:none}
-#hit-fb{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);font:18px 'Orbitron',monospace;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .3s}
+#hit-fb{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font:18px 'Orbitron',monospace;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .3s;text-align:center;width:90%}
 #result-display{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);font:11px 'Orbitron',monospace;color:#aaa;text-align:center;pointer-events:none;white-space:nowrap}
 .overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(5,5,10,.93);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100}
 .overlay h1{font:32px 'Orbitron',monospace;font-weight:900;margin-bottom:14px}
@@ -219,7 +219,7 @@ function showLabel(text,color,dur=600){
 function showFB(rating){
   const fb=$('hit-fb');
   const c={PERFECT:'#ffaa00',GREAT:'#44aaff',COOL:'#aaaa44',MISS:'#ff3366'};
-  fb.textContent=rating; fb.style.color=c[rating];
+  fb.textContent=rating; fb.style.color=c[rating]; fb.style.fontSize='18px';
   fb.style.textShadow='none';
   fb.style.opacity=1; fb.style.transform='translate(-50%,-50%) scale(1.3)';
   setTimeout(()=>{fb.style.opacity=0;fb.style.transform='translate(-50%,-50%) scale(1)'},300);
@@ -256,18 +256,10 @@ function startSlotPhase(){
   slotPhase='rolling'; slotRollAnim=0;
   phaseActive=false; showingResults=false;
 
-  // Base values
+  // Values start at 0 during roll — set after roll completes
   baseValues={sword:0,shield:0,gold:0};
   tapValues={sword:0,shield:0,gold:0};
   allPerfectSoFar=true; isAllPerfect=false;
-
-  const triple=slotIcons[0]===slotIcons[1]&&slotIcons[1]===slotIcons[2];
-  if(triple){
-    const ic=slotIcons[0];
-    baseValues[ic]=ic==='gold'?6:60;
-  } else {
-    slotIcons.forEach(ic=>{ baseValues[ic]+=(ic==='gold'?1:10); });
-  }
 
   // Build reveal schedule
   const edges=[1]; let vp=1;
@@ -409,7 +401,7 @@ function buildGlyph(edgeMults, cx, cy){
 function startGlyphPhase(){
   slotPhase='playing';
   const em=buildRhythmFromSlots();
-  const g=buildGlyph(em, W()/2, H()*0.60);
+  const g=buildGlyph(em, W()/2, H()*0.53);
   glyphVerts=g.verts; glyphEdges=g.edges; edgeDurs=g.durs;
   totalInts=g.verts.length;
   dotSeg=0; dotProg=0; endPauseTimer=0;
@@ -419,6 +411,17 @@ function startGlyphPhase(){
   turnResults=[]; phaseActive=true;
   tapValues={sword:0,shield:0,gold:0};
   allPerfectSoFar=true; isAllPerfect=false;
+
+  // Set base values now — indicators jump from 0 to base on init beat
+  baseValues={sword:0,shield:0,gold:0};
+  const triple=slotIcons[0]===slotIcons[1]&&slotIcons[1]===slotIcons[2];
+  if(triple){
+    const ic=slotIcons[0];
+    baseValues[ic]=ic==='gold'?6:60;
+  } else {
+    slotIcons.forEach(ic=>{ baseValues[ic]+=(ic==='gold'?1:10); });
+  }
+
   play('slot');
 }
 
@@ -481,12 +484,12 @@ function applyTap(vi, rating){
     const b={sword:{PERFECT:20,GREAT:15,COOL:12},shield:{PERFECT:15,GREAT:12,COOL:11},gold:{PERFECT:5,GREAT:2,COOL:1}};
     const val=b[icon][rating]; tapValues[icon]+=val;
     if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); shake=Math.min(val/3,6); updateUI(); slashAnims.push({life:1,x:W()/2,y:H()*.08}); play('sword'); }
-    else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.83}); play('shield'); }
+    else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.80}); play('shield'); }
     else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin'); }
   } else if(vi>0){
     const ab={PERFECT:5,GREAT:2,COOL:1}[rating];
     if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); shake=Math.min(ab/3,4); slashAnims.push({life:1,x:W()/2,y:H()*.08}); }
-    if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.83}); }
+    if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.80}); }
     if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating); }
     updateUI(); sfx.tick();
   }
@@ -522,7 +525,7 @@ function finishPlaying(){
     sfx.triple();
     const fb=$('hit-fb');
     fb.textContent=`✨ Perfect Streak ${streakCount}!`;
-    fb.style.color='#ffaa00';
+    fb.style.color='#ffaa00'; fb.style.fontSize='14px';
     fb.style.textShadow='none';
     fb.style.opacity=1; fb.style.transform='translate(-50%,-50%) scale(1.3)';
   } else {
@@ -664,7 +667,7 @@ function drawBG(){
 
 function drawSlots(){
   if(slotPhase==='idle') return;
-  const cx=W()/2, sy=H()*.24, sw=56, sh=64, gap=10;
+  const cx=W()/2, sy=H()*.28, sw=56, sh=64, gap=10;
   const sx=cx-(sw*3+gap*2)/2;
 
   for(let i=0;i<3;i++){
@@ -695,7 +698,7 @@ function drawSlots(){
 
 function drawIndicators(){
   if(slotPhase==='idle') return;
-  const cx=W()/2, y=H()*.37;
+  const cx=W()/2, y=H()*.73;
   const names=['sword','shield','gold'];
   const gap=Math.min(140,W()*.35), sx=cx-gap;
 
@@ -810,7 +813,7 @@ function drawEnemy(){
 }
 
 function drawPlayer(){
-  const cx=W()/2,cy=H()*.83,p=Math.sin(glow*2.5)*2;
+  const cx=W()/2,cy=H()*.80,p=Math.sin(glow*2.5)*2;
   ctx.save();ctx.translate(cx,cy);
   ctx.beginPath();ctx.arc(0,0,25,0,Math.PI*2);ctx.fillStyle='rgba(0,255,170,.06)';ctx.fill();
   ctx.strokeStyle='#00ffaa88';ctx.lineWidth=2;
