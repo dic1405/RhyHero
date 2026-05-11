@@ -47,6 +47,29 @@ canvas{display:block;width:100%;height:100%}
 #start-screen .ctrls span{color:#00ffaa;font-weight:600}
 #pause-btn{position:absolute;top:12px;left:12px;font-size:20px;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid #ffffff22;color:#ffffff88;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;line-height:1}
 #pause-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+
+#shop-screen{display:none;flex-direction:column;align-items:center;padding:20px 15px;overflow-y:auto}
+#shop-screen h2{font:20px 'Orbitron';color:#ffaa00;margin-bottom:8px}
+#shop-gold-display{font:14px 'Orbitron';color:#ffaa00;margin-bottom:12px}
+.shop-grid{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;justify-content:center}
+.shop-card{background:rgba(255,255,255,0.04);border:1.5px solid #ffffff22;border-radius:6px;padding:10px;width:120px;text-align:center;cursor:pointer;transition:all .2s}
+.shop-card:hover{border-color:#00ffaa;background:rgba(0,255,170,0.05)}
+.shop-card.sold{opacity:0.3;pointer-events:none}
+.shop-card .icon{font-size:28px;margin-bottom:4px}
+.shop-card .name{font:10px 'Orbitron';color:#e0e0e0;margin-bottom:3px}
+.shop-card .desc{font:9px 'Rajdhani';color:#888;margin-bottom:6px;min-height:24px}
+.shop-card .cost{font:11px 'Orbitron';color:#ffaa00}
+#reroll-btn{font:10px 'Orbitron';padding:8px 20px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;margin-bottom:12px}
+.inv-section{width:100%;max-width:380px;margin-bottom:10px}
+.inv-label{font:9px 'Orbitron';color:#666;margin-bottom:4px;text-align:left}
+.inv-slots{display:flex;gap:5px}
+.inv-slot{width:36px;height:36px;border:1px solid #ffffff22;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.02)}
+.inv-slot.filled{border-color:#00ffaa44}
+#shop-continue{font:14px 'Orbitron';padding:12px 40px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:10px}
+#usable-bar{position:absolute;bottom:9%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
+.usable-btn{width:32px;height:32px;border:1px solid #ffffff22;border-radius:4px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;color:#fff;transition:all .2s}
+.usable-btn:hover{border-color:#00ffaa}
+.usable-btn.empty{opacity:0.2;pointer-events:none}
 </style>
 </head>
 <body>
@@ -92,6 +115,27 @@ canvas{display:block;width:100%;height:100%}
     <p id="go-sub"></p>
     <button class="btn" id="restart-btn">AGAIN</button>
   </div>
+
+  <div id="shop-screen" class="overlay">
+    <h2>SHOP</h2>
+    <div id="shop-gold-display">💰 0</div>
+    <div class="shop-grid" id="shop-grid"></div>
+    <button id="reroll-btn" onclick="rerollShop()">🎲 Reroll (10g)</button>
+    <div class="inv-section">
+      <div class="inv-label">PASSIVES (5 slots)</div>
+      <div class="inv-slots" id="inv-passives"></div>
+    </div>
+    <div class="inv-section">
+      <div class="inv-label">USABLES (3 slots)</div>
+      <div class="inv-slots" id="inv-usables"></div>
+    </div>
+    <button id="shop-continue" onclick="closeShop()">CONTINUE →</button>
+  </div>
+  <div id="usable-bar">
+    <button class="usable-btn empty" id="use0" onclick="useItem(0)"></button>
+    <button class="usable-btn empty" id="use1" onclick="useItem(1)"></button>
+    <button class="usable-btn empty" id="use2" onclick="useItem(2)"></button>
+  </div>
 </div>
 </div>
 
@@ -134,11 +178,12 @@ function play(name, vol=1, pitch=1){
 function preloadAudio(){
   ensureAC();
   ['Slot','Sword','Shield','Coin','Snare'].forEach(f=>loadAudio(f.toLowerCase(), f+'.wav'));
+  loadAudio('bow_charge','bow_charge.wav'); loadAudio('bow_shoot','Bow_Shoot.wav');
 }
 
 
 const sfx = {
-  slotLand(icon){ play(icon==='gold'?'coin':icon) },
+  slotLand(icon){ if(icon==='bow') play('bow_shoot'); else play(icon==='gold'?'coin':icon) },
   tick(){ play('snare',0.5) },
   miss(){ tone(150,.2,.1,'sawtooth') },
   enemyHit(){ tone(100,.3,.15,'sawtooth') },
@@ -151,6 +196,7 @@ const sfx = {
 const iconImages = {};
 ['sword','shield'].forEach(n=>{ const i=new Image(); i.src=ASSET_BASE+'icon_'+n+'.png'; iconImages[n]=i; });
 { const i=new Image(); i.src=ASSET_BASE+'icon_coin.png'; iconImages.gold=i; }
+{ const i=new Image(); i.src=ASSET_BASE+'icon_bow.png'; iconImages.bow=i; }
 
 function drawIcon(name, cx, cy, size){
   const img=iconImages[name];
@@ -182,22 +228,184 @@ function updateTempo(){
   else { currentBPM=110+(enemyNum-11)*3; slotCount=5; }
   BEAT=60/currentBPM;
 }
-const PLAYER_MAX_HP = 300;
+let PLAYER_MAX_HP = 300;
 const BASE_ENEMY_HP = 150;
 const BASE_ENEMY_DMG = 30;
 const ICONS = ['sword','shield','gold'];
-const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00' };
-const SINGLE_BASE = {sword:25, shield:10, gold:5};
+const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00', bow:'#88ff44' };
+const SINGLE_BASE = {sword:25, shield:10, gold:5, bow:20};
 const MATCH_VALUES = {
   sword: {3:100, 4:200, 5:400, 6:1000},
   shield: {3:40, 4:80, 5:150, 6:300},
-  gold: {3:20, 4:40, 5:75, 6:200}
+  gold: {3:20, 4:40, 5:75, 6:200},
+  bow: {3:80, 4:160, 5:320, 6:640}
 };
 const TAP_BONUS = {
   sword: {PERFECT:5, GREAT:2, COOL:1},
   shield: {PERFECT:5, GREAT:2, COOL:1},
-  gold: {PERFECT:3, GREAT:2, COOL:1}
+  gold: {PERFECT:3, GREAT:2, COOL:1},
+  bow: {PERFECT:5, GREAT:2, COOL:1}
 };
+// ── Item & Shop System ──
+const SHOP_POOL = [
+  {id:'upgrade_sword',name:'Upgrade Sword',desc:'+10% sword dmg\n+2 per tap',icon:'⚔',type:'passive',baseCost:30,inc:30},
+  {id:'upgrade_shield',name:'Upgrade Shield',desc:'+10% shield val\n+2 per tap',icon:'🛡',type:'passive',baseCost:30,inc:30},
+  {id:'upgrade_hp',name:'Upgrade HP',desc:'+10% max HP',icon:'❤',type:'passive',baseCost:30,inc:30},
+  {id:'health_potion',name:'Health Potion',desc:'+100 HP',icon:'🧪',type:'usable',baseCost:20,inc:0},
+  {id:'bow',name:'Bow',desc:'New icon type\nDouble HH chance',icon:'🏹',type:'special',baseCost:50,inc:0},
+];
+let upgradeCounts={sword:0,shield:0,hp:0};
+let passiveSlots=[]; // max 5, [{id,icon,name}]
+let usableSlots=[null,null,null]; // max 3, [{id,icon,name}] or null
+let bowUnlocked=false;
+let rerollCount=0;
+let shopItems=[];
+let shopSold=[];
+
+function getItemCost(item){
+  if(item.id==='upgrade_sword') return item.baseCost+item.inc*upgradeCounts.sword;
+  if(item.id==='upgrade_shield') return item.baseCost+item.inc*upgradeCounts.shield;
+  if(item.id==='upgrade_hp') return item.baseCost+item.inc*upgradeCounts.hp;
+  return item.baseCost;
+}
+
+function getRerollCost(){ return 10+rerollCount*5; }
+
+function canBuyItem(item){
+  const cost=getItemCost(item);
+  if(gold<cost) return false;
+  if(item.type==='passive'&&passiveSlots.length>=5) return false;
+  if(item.type==='usable'){
+    const freeSlot=usableSlots.findIndex(s=>s===null);
+    if(freeSlot<0) return false;
+  }
+  if(item.id==='bow'&&bowUnlocked) return false;
+  return true;
+}
+
+function buyItem(idx){
+  const item=shopItems[idx];
+  if(!item||shopSold[idx]||!canBuyItem(item)) return;
+  const cost=getItemCost(item);
+  gold-=cost;
+  shopSold[idx]=true;
+
+  if(item.id==='upgrade_sword'){
+    upgradeCounts.sword++; passiveSlots.push({id:item.id,icon:'⚔',name:'Sword+'+upgradeCounts.sword});
+  } else if(item.id==='upgrade_shield'){
+    upgradeCounts.shield++; passiveSlots.push({id:item.id,icon:'🛡',name:'Shield+'+upgradeCounts.shield});
+  } else if(item.id==='upgrade_hp'){
+    upgradeCounts.hp++;
+    PLAYER_MAX_HP=Math.floor(300*(1+upgradeCounts.hp*0.1));
+    playerHP=Math.min(playerHP+30,PLAYER_MAX_HP);
+    passiveSlots.push({id:item.id,icon:'❤',name:'HP+'+upgradeCounts.hp});
+  } else if(item.id==='health_potion'){
+    const freeSlot=usableSlots.findIndex(s=>s===null);
+    usableSlots[freeSlot]={id:'health_potion',icon:'🧪',name:'Potion'};
+  } else if(item.id==='bow'){
+    bowUnlocked=true;
+    passiveSlots.push({id:'bow',icon:'🏹',name:'Bow'});
+  }
+  updateUI();
+  renderShop();
+}
+
+function generateShopItems(){
+  const pool=[...SHOP_POOL];
+  shopItems=[]; shopSold=[false,false,false];
+  for(let i=0;i<3;i++){
+    const pick=pool[Math.floor(Math.random()*pool.length)];
+    shopItems.push(pick);
+  }
+}
+
+function rerollShop(){
+  const cost=getRerollCost();
+  if(gold<cost) return;
+  gold-=cost; rerollCount++;
+  generateShopItems();
+  updateUI(); renderShop();
+}
+
+function renderShop(){
+  $('shop-gold-display').textContent='💰 '+gold;
+  const grid=$('shop-grid'); grid.innerHTML='';
+  shopItems.forEach((item,i)=>{
+    const cost=getItemCost(item);
+    const can=canBuyItem(item)&&!shopSold[i];
+    const sold=shopSold[i];
+    const card=document.createElement('div');
+    card.className='shop-card'+(sold?' sold':'');
+    card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc.replace(/\\n/g,'<br>')+'</div><div class="cost">'+(sold?'SOLD':'💰 '+cost)+'</div>';
+    if(!sold&&can) card.onclick=()=>buyItem(i);
+    else if(!sold) card.style.opacity='0.5';
+    grid.appendChild(card);
+  });
+  $('reroll-btn').textContent='🎲 Reroll ('+getRerollCost()+'g)';
+  // Render inventory
+  const pDiv=$('inv-passives'); pDiv.innerHTML='';
+  for(let i=0;i<5;i++){
+    const s=document.createElement('div');
+    s.className='inv-slot'+(passiveSlots[i]?' filled':'');
+    s.textContent=passiveSlots[i]?passiveSlots[i].icon:'';
+    s.title=passiveSlots[i]?passiveSlots[i].name:'';
+    pDiv.appendChild(s);
+  }
+  const uDiv=$('inv-usables'); uDiv.innerHTML='';
+  for(let i=0;i<3;i++){
+    const s=document.createElement('div');
+    s.className='inv-slot'+(usableSlots[i]?' filled':'');
+    s.textContent=usableSlots[i]?usableSlots[i].icon:'';
+    uDiv.appendChild(s);
+  }
+}
+
+function openShop(){
+  generateShopItems();
+  renderShop();
+  $('shop-screen').style.display='flex';
+}
+
+function closeShop(){
+  $('shop-screen').style.display='none';
+  updateUsableBar();
+  $('e-label').textContent='ENEMY '+enemyNum;
+  $('e-atk').textContent='ATK: '+currentEnemyDmg;
+  sfx.nextEnemy(); showLabel('ENEMY '+enemyNum,'#ff3366');
+  setTimeout(()=>showRollButton(),1500);
+}
+
+function useItem(idx){
+  const item=usableSlots[idx];
+  if(!item||slotPhase!=='waiting') return;
+  if(item.id==='health_potion'){
+    playerHP=Math.min(playerHP+100,PLAYER_MAX_HP);
+    updateUI();
+  }
+  usableSlots[idx]=null;
+  updateUsableBar();
+}
+
+function updateUsableBar(){
+  for(let i=0;i<3;i++){
+    const btn=$('use'+i);
+    if(usableSlots[i]){
+      btn.textContent=usableSlots[i].icon;
+      btn.className='usable-btn';
+    } else {
+      btn.textContent='';
+      btn.className='usable-btn empty';
+    }
+  }
+}
+
+// Upgrade getters
+function getSwordBase(){ return Math.floor(SINGLE_BASE.sword*(1+upgradeCounts.sword*0.1)); }
+function getShieldBase(){ return Math.floor(SINGLE_BASE.shield*(1+upgradeCounts.shield*0.1)); }
+function getSwordTap(rating){ return (TAP_BONUS.sword[rating]||0)+upgradeCounts.sword*2; }
+function getShieldTap(rating){ return (TAP_BONUS.shield[rating]||0)+upgradeCounts.shield*2; }
+
+
 
 // ── State ──
 let playerHP=PLAYER_MAX_HP, playerShield=0, gold=0;
@@ -289,7 +497,11 @@ function startSlotPhase(){
   $('result-display').textContent='';
   activeSlots=slotCount+getStreakSlotCount();
   slotIcons=Array.from({length:activeSlots},rollIcon);
-  slotBeats=slotIcons.map(ic=>ic==='sword'?'F':rollBeat());
+  slotBeats=slotIcons.map(ic=>{
+    if(ic==='sword') return 'F';
+    if(ic==='bow'){ const r=Math.random(); return r<0.296?'F':r<0.815?'HH':'H'; }
+    return rollBeat();
+  });
   slotRevealedIcons=new Array(activeSlots).fill(false);
   slotPhase='rolling'; slotRollAnim=0;
   phaseActive=false; showingResults=false;
@@ -346,16 +558,19 @@ function startSlotPhase(){
 
 function applySlotReveal(idx){
   const sv=slotValues[idx];
-  baseValues[sv.icon]+=sv.value;
-  if(sv.icon==='sword'){
-    enemyHP=Math.max(0,enemyHP-sv.value);
-    shake=Math.min(sv.value/10,4);
-    spawnSlashProjectile(sv.value);
+  let val=sv.value;
+  if(sv.icon==='sword') val=Math.floor(val*(1+upgradeCounts.sword*0.1));
+  else if(sv.icon==='shield') val=Math.floor(val*(1+upgradeCounts.shield*0.1));
+  baseValues[sv.icon]+=val;
+  if(sv.icon==='sword'||sv.icon==='bow'){
+    enemyHP=Math.max(0,enemyHP-val);
+    shake=Math.min(val/10,4);
+    spawnSlashProjectile(val);
   } else if(sv.icon==='shield'){
-    playerShield+=sv.value;
+    playerShield+=val;
     shieldAnims.push({life:1,x:W()/2,y:H()*.92});
-  } else {
-    gold+=sv.value;
+  } else if(sv.icon==='gold'){
+    gold+=val;
     spawnCoins(W()/2,H()*.5,'PERFECT');
   }
   updateUI();
@@ -372,12 +587,15 @@ function updateSlots(dt){
       const ev=slotSchedule[slotScheduleIdx];
       if(ev.action==='reveal'){
         slotRevealedIcons[ev.slot]=true;
-        sfx.slotLand(slotIcons[ev.slot]);
+        const ic=slotIcons[ev.slot], bt=slotBeats[ev.slot];
+        if(ic==='bow'){ play(bt==='F'?'bow_shoot':'bow_charge'); }
+        else sfx.slotLand(ic);
         slotBeatLines[ev.slot]=1; slotBeatFlash[ev.slot]=300;
         applySlotReveal(ev.slot);
       } else if(ev.action==='init'){ play('slot',1,Math.pow(2,streakCount*2/12));
       } else if(ev.action==='snare'){
-        sfx.tick();
+        const sic=ev.slot>=0?slotIcons[ev.slot]:null;
+        if(sic==='bow') play('bow_shoot'); else sfx.tick();
         if(ev.slot>=0){ slotBeatLines[ev.slot]=2; slotBeatFlash[ev.slot]=300; }
       }
       slotScheduleIdx++;
@@ -559,9 +777,12 @@ function applyTap(vi, rating){
 
   if(ii>=0){
     const icon=slotIcons[ii];
-    const val=TAP_BONUS[icon][rating]; tapValues[icon]+=val;
+    let val=TAP_BONUS[icon][rating]||0;
+    if(icon==='sword') val=getSwordTap(rating);
+    else if(icon==='shield') val=getShieldTap(rating);
+    tapValues[icon]+=val;
     if(rating==='PERFECT') shake=Math.min(val,3);
-    if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); spawnSlashProjectile(val); play('sword',vol); }
+    if(icon==='sword'||icon==='bow'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); spawnSlashProjectile(val); play('sword',vol); }
     else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); play('shield',vol); }
     else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin',vol); }
   } else if(vi>0){
@@ -696,6 +917,7 @@ function drawEnemyTurn(){
 
 // ── Progression ──
 function advanceEnemy(){
+  gold+=20; // defeat bonus
   enemyNum++;
   // HP: +10/lvl (1-4), +20/lvl (5-10), +50/lvl (11+)
   if(enemyNum<=4) enemyMaxHP=150+(enemyNum-1)*10;
@@ -712,8 +934,7 @@ function advanceEnemy(){
   $('e-label').textContent=`ENEMY ${enemyNum}`;
   $('e-atk').textContent=`ATK: ${currentEnemyDmg}`;
   $('result-display').textContent='';
-  sfx.nextEnemy(); showLabel(`ENEMY ${enemyNum}`,'#ff3366');
-  setTimeout(()=>showRollButton(),2000);
+  openShop();
 }
 
 function endGame(){
