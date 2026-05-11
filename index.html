@@ -56,7 +56,7 @@ canvas{display:block;width:100%;height:100%}
   <div id="enemy-section">
     <div id="e-label">ENEMY 1</div>
     <div id="e-hp-wrap" class="bar-wrap"><div id="e-hp-fill" class="bar-fill"></div></div>
-    <div id="e-hp-txt">80/80</div>
+    <div id="e-hp-txt">150/150</div>
     <div id="e-atk">ATK: 30</div>
   </div>
   <div id="player-section">
@@ -136,12 +136,13 @@ function preloadAudio(){
   ['Slot','Sword','Shield','Coin','Snare'].forEach(f=>loadAudio(f.toLowerCase(), f+'.wav'));
 }
 
+
 const sfx = {
   slotLand(icon){ play(icon==='gold'?'coin':icon) },
   tick(){ play('snare',0.5) },
   miss(){ tone(150,.2,.1,'sawtooth') },
   enemyHit(){ tone(100,.3,.15,'sawtooth') },
-  triple(streak=0){ const p=Math.pow(2,(streak*2)/12); [0,60,120,180].forEach((d,i)=>setTimeout(()=>tone((800+i*200)*p,.12,.12),d)) },
+  streak(streak=0){ const p=Math.pow(2,(streak*2)/12); play('snare',1.2,p); },
   nextEnemy(){ tone(600,.15,.12); setTimeout(()=>tone(800,.15,.12),120); setTimeout(()=>tone(1000,.2,.1),240) },
   defeat(){ [0,150,300].forEach((d,i)=>setTimeout(()=>tone(300-i*80,.4,.12,'sawtooth'),d)) },
 };
@@ -175,13 +176,14 @@ let currentBPM = BASE_BPM;
 let BEAT = 60/BASE_BPM;
 let slotCount = 3;
 function updateTempo(){
-  if(enemyNum<=4){ currentBPM=60+enemyNum*10; slotCount=3; }
-  else if(enemyNum<=7){ currentBPM=100+(enemyNum-5)*5; slotCount=4; }
-  else { currentBPM=110+(enemyNum-8)*5; slotCount=5; }
+  if(enemyNum<=4){ currentBPM=70+(enemyNum-1)*8; slotCount=3; }
+  else if(enemyNum<=7){ currentBPM=80+(enemyNum-5)*5; slotCount=4; }
+  else if(enemyNum<=10){ currentBPM=80+(enemyNum-5)*5; slotCount=5; }
+  else { currentBPM=110+(enemyNum-11)*3; slotCount=5; }
   BEAT=60/currentBPM;
 }
 const PLAYER_MAX_HP = 300;
-const BASE_ENEMY_HP = 80;
+const BASE_ENEMY_HP = 150;
 const BASE_ENEMY_DMG = 30;
 const ICONS = ['sword','shield','gold'];
 const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00' };
@@ -219,7 +221,7 @@ let baseValues={sword:0,shield:0,gold:0}, tapValues={sword:0,shield:0,gold:0};
 let allPerfectSoFar=true, isAllPerfect=false;
 
 let streakCount=0, streakTextTimer=0, streakActive=false;
-let particles=[], floatingAnims=[], slashAnims=[], shieldAnims=[];
+let particles=[], floatingAnims=[], shieldAnims=[];
 let slashProjectiles=[];
 let shake=0, glow=0, lastTime=0, paused=false;
 
@@ -383,7 +385,7 @@ function updateSlots(dt){
     for(let i=0;i<activeSlots;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(slotScheduleIdx>=slotSchedule.length){
       slotPhase='show-result'; slotTimer=BEAT*1000;
-      if(slotIcons.every(ic=>ic===slotIcons[0])) sfx.triple();
+      if(slotIcons.every(ic=>ic===slotIcons[0])) sfx.streak();
     }
   } else if(slotPhase==='show-result'){
     slotTimer-=dt;
@@ -614,7 +616,7 @@ function finishPlaying(){
 
   if(isAllPerfect){
     streakCount++; streakActive=true; streakTextTimer=BEAT*1000;
-    sfx.triple(streakCount);
+    sfx.streak(streakCount);
     const fb=$('hit-fb');
     fb.textContent=`✨ Perfect Streak ${streakCount}!`;
     fb.style.color='#ffaa00'; fb.style.fontSize='14px';
@@ -695,15 +697,15 @@ function drawEnemyTurn(){
 // ── Progression ──
 function advanceEnemy(){
   enemyNum++;
-  // HP scaling: +40/lvl (1-4), +50/lvl (5-7), +60/lvl (8+)
-  if(enemyNum<=4) enemyMaxHP=80+(enemyNum-1)*40;
-  else if(enemyNum<=7) enemyMaxHP=200+(enemyNum-4)*50;
-  else enemyMaxHP=350+(enemyNum-7)*60;
+  // HP: +10/lvl (1-4), +20/lvl (5-10), +50/lvl (11+)
+  if(enemyNum<=4) enemyMaxHP=150+(enemyNum-1)*10;
+  else if(enemyNum<=10) enemyMaxHP=180+(enemyNum-4)*20;
+  else enemyMaxHP=300+(enemyNum-10)*50;
   enemyHP=enemyMaxHP;
-  // ATK scaling: +5/lvl (1-3), +6/lvl (4-9), +7/lvl (10+)
-  if(enemyNum<=3) currentEnemyDmg=30+(enemyNum-1)*5;
-  else if(enemyNum<=9) currentEnemyDmg=40+(enemyNum-3)*6;
-  else currentEnemyDmg=76+(enemyNum-9)*7;
+  // ATK: +5/lvl (1-4), +10/lvl (5-10), +20/lvl (11+)
+  if(enemyNum<=4) currentEnemyDmg=30+(enemyNum-1)*5;
+  else if(enemyNum<=10) currentEnemyDmg=45+(enemyNum-4)*10;
+  else currentEnemyDmg=105+(enemyNum-10)*20;
   playerHP=PLAYER_MAX_HP; playerShield=0;
   streakCount=0; streakActive=false;
   updateTempo(); updateUI();
@@ -729,7 +731,7 @@ function resetGame(){
   updateTempo();
   slotPhase='idle'; phaseActive=false; showingResults=false;
   paused=false; $('pause-screen').style.display='none'; $('pause-btn').textContent='⏸';
-  particles=[]; shake=0; floatingAnims=[]; slashAnims=[]; shieldAnims=[]; slashProjectiles=[];
+  particles=[]; shake=0; floatingAnims=[]; shieldAnims=[]; slashProjectiles=[];
   streakCount=0; streakActive=false;
   updateUI(); $('gameover-screen').style.display='none';
   $('result-display').textContent='';
@@ -929,8 +931,6 @@ function updateAnims(dt){
   const decay=dt/800;
   floatingAnims=floatingAnims.filter(a=>a.life>0);
   floatingAnims.forEach(a=>{a.x+=a.vx;a.y+=a.vy;a.vy+=.08;a.life-=decay;});
-  slashAnims=slashAnims.filter(a=>a.life>0);
-  slashAnims.forEach(a=>{a.life-=dt/300;});
   shieldAnims=shieldAnims.filter(a=>a.life>0);
   shieldAnims.forEach(a=>{a.life-=dt/500;});
   slashProjectiles=slashProjectiles.filter(p=>p.life>0);
