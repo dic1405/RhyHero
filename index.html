@@ -497,12 +497,14 @@ function applyTap(vi, rating){
     const icon=slotIcons[ii];
     const b={sword:{PERFECT:20,GREAT:15,COOL:12},shield:{PERFECT:15,GREAT:12,COOL:11},gold:{PERFECT:5,GREAT:2,COOL:1}};
     const val=b[icon][rating]; tapValues[icon]+=val;
-    if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); shake=Math.min(val/3,6); updateUI(); slashAnims.push({life:1,x:W()/2,y:H()*.08}); play('sword',vol); }
+    if(rating==='PERFECT') shake=Math.min(val/3,3);
+    if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); slashAnims.push({life:1,x:W()/2,y:H()*.08}); play('sword',vol); }
     else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.88}); play('shield',vol); }
     else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin',vol); }
   } else if(vi>0){
     const ab={PERFECT:5,GREAT:2,COOL:1}[rating];
-    if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); shake=Math.min(ab/3,4); slashAnims.push({life:1,x:W()/2,y:H()*.08}); }
+    if(rating==='PERFECT') shake=Math.min(ab/3,2);
+    if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); slashAnims.push({life:1,x:W()/2,y:H()*.08}); }
     if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.88}); }
     if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating); }
     updateUI(); play('snare',vol*0.5);
