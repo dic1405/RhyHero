@@ -8,7 +8,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 html{height:100%;overflow:hidden}
-body{background:#0a0a0f;color:#e0e0e0;font-family:'Rajdhani',sans-serif;overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-user-select:none;touch-action:manipulation;display:flex;justify-content:center;align-items:stretch}
+body{background:#1c1c26;color:#e0e0e0;font-family:'Rajdhani',sans-serif;overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-user-select:none;touch-action:manipulation;display:flex;justify-content:center;align-items:stretch}
 @supports(height:100dvh){body{height:100dvh}}
 #game-wrap{position:relative;width:100%;max-width:430px;height:100%;overflow:hidden;padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
 canvas{display:block;width:100%;height:100%}
@@ -127,7 +127,7 @@ function play(name, vol=1){
   ensureAC();
   const b = audioBuffers[name]; if(!b) return;
   const s=ac.createBufferSource(), g=ac.createGain();
-  s.buffer=b; g.gain.value=Math.min(1,vol);
+  s.buffer=b; g.gain.value=vol;
   s.connect(g); g.connect(ac.destination); s.start(0);
 }
 
@@ -478,20 +478,21 @@ function handleHit(){
 function applyTap(vi, rating){
   const vx=glyphVerts[vi].x, vy=glyphVerts[vi].y;
   const ii=iconDotVertices.indexOf(vi);
+  const vol={PERFECT:1.6,GREAT:1.0,COOL:0.3}[rating]||1;
 
   if(ii>=0){
     const icon=slotIcons[ii];
     const b={sword:{PERFECT:20,GREAT:15,COOL:12},shield:{PERFECT:15,GREAT:12,COOL:11},gold:{PERFECT:5,GREAT:2,COOL:1}};
     const val=b[icon][rating]; tapValues[icon]+=val;
-    if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); shake=Math.min(val/3,6); updateUI(); slashAnims.push({life:1,x:W()/2,y:H()*.08}); play('sword'); }
-    else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.80}); play('shield'); }
-    else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin'); }
+    if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); shake=Math.min(val/3,6); updateUI(); slashAnims.push({life:1,x:W()/2,y:H()*.08}); play('sword',vol); }
+    else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.80}); play('shield',vol); }
+    else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin',vol); }
   } else if(vi>0){
     const ab={PERFECT:5,GREAT:2,COOL:1}[rating];
     if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); shake=Math.min(ab/3,4); slashAnims.push({life:1,x:W()/2,y:H()*.08}); }
     if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.80}); }
     if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating); }
-    updateUI(); sfx.tick();
+    updateUI(); play('snare',vol*0.5);
   }
 }
 
@@ -510,7 +511,19 @@ function spawnParticles(x,y,rating){
 }
 
 // ── Finish / Streak ──
-function getGlyphOpacity(){ return Math.max(0,1-streakCount*.25); }
+// Opacity table: [glyphAlpha, circleBase, timingLo, timingHi]
+const STREAK_OPACITY = [
+  [1.00, 1.00, 1.00, 1.00], // streak 0
+  [0.66, 0.75, 0.70, 0.90], // streak 1
+  [0.33, 0.40, 0.50, 0.70], // streak 2
+  [0.10, 0.15, 0.22, 0.30], // streak 3
+  [0.00, 0.05, 0.10, 0.15], // streak 4
+  [0.00, 0.00, 0.05, 0.10], // streak 5+
+];
+function getStreakOpacity(){
+  const i=Math.min(streakCount, STREAK_OPACITY.length-1);
+  return STREAK_OPACITY[i];
+}
 
 function finishPlaying(){
   phaseActive=false; showingResults=true;
@@ -656,7 +669,7 @@ $('roll-btn').addEventListener('click',()=>{ensureAC();startSlotPhase()});
 
 // ── Drawing ──
 function drawBG(){
-  ctx.fillStyle='#0d0d14'; ctx.fillRect(0,0,W(),H());
+  ctx.fillStyle='#1c1c26'; ctx.fillRect(0,0,W(),H());
   bgP.forEach(p=>{
     p.x+=p.vx;p.y+=p.vy;
     if(p.x<0)p.x=1;if(p.x>1)p.x=0;if(p.y<0)p.y=1;if(p.y>1)p.y=0;
@@ -714,38 +727,41 @@ function drawIndicators(){
 
 function drawGlyph(){
   if(slotPhase!=='playing'||(!phaseActive&&!showingResults)) return;
-  const glyphA=getGlyphOpacity();
-  const circleBaseA=Math.max(0,1-streakCount*.22); // circles fade slower (22% vs 25%)
+  const so=getStreakOpacity(); // [glyphA, circleBase, timingLo, timingHi]
   const col='#00ffaa', dim='rgba(0,255,170,0.15)', mid='rgba(0,255,170,0.4)';
   const maxR=12, minR=7.5, animW=BEAT*1000;
 
-  // Edges — color based on destination vertex rating
-  ctx.globalAlpha=glyphA;
+  // Edges — traversed edges at 100%, ahead edges at streak opacity
   glyphEdges.forEach((e,ei)=>{
     const f=glyphVerts[e.from],t=glyphVerts[e.to];
     const isInit=ei===0;
     const rating=vertexRatings[e.to];
+    const traversed=rating!==null; // vertex has been resolved (tapped or missed)
 
-    // Background glow line
+    // Traversed edges show at 100% opacity, ahead edges at streak opacity
+    ctx.globalAlpha=traversed?1:so[0];
+
+    // Background glow line — PERFECT gets thicker glow too
+    const isPerfect=rating==='PERFECT';
     if(rating==='MISS') ctx.strokeStyle='rgba(255,51,102,0.15)';
-    else if(rating==='PERFECT') ctx.strokeStyle='rgba(255,170,0,0.25)';
-    else if(rating) ctx.strokeStyle='rgba(0,255,170,0.2)';
+    else if(isPerfect) ctx.strokeStyle='rgba(255,170,0,0.3)';
+    else if(rating==='GREAT'||rating==='COOL') ctx.strokeStyle='rgba(0,255,170,0.2)';
     else ctx.strokeStyle=isInit?'rgba(255,255,255,0.04)':dim;
-    ctx.lineWidth=isInit?4:6;
+    ctx.lineWidth=isInit?4:isPerfect?10:6;
     ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(t.x,t.y);ctx.stroke();
 
-    // Center line with rating-based color and thickness
+    // Center line
     if(!isInit||rating){
       let lc=mid, lw=e.beatMult<=.5?0.75:1.5;
-      if(rating==='MISS'){ lc='rgba(255,51,102,0.6)'; }
-      else if(rating==='PERFECT'){ lc='rgba(255,170,0,0.9)'; lw*=2; }
+      if(rating==='MISS') lc='rgba(255,51,102,0.6)';
+      else if(isPerfect){ lc='rgba(255,170,0,0.9)'; lw=e.beatMult<=.5?2:4; }
       else if(rating==='GREAT'||rating==='COOL'){ lc='rgba(0,255,170,0.6)'; lw*=1.25; }
       ctx.strokeStyle=lc; ctx.lineWidth=lw;
       ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(t.x,t.y);ctx.stroke();
     }
   });
 
-  // Vertices — circle opacity (softer fade + proximity boost)
+  // Vertices — circle opacity with timing ramp
   glyphVerts.forEach((v,i)=>{
     const hit=intHits[i], isInit=i===0;
     let td=Infinity;
@@ -757,10 +773,14 @@ function drawGlyph(){
     }
     let r=td<=animW&&td!==Infinity?minR+(maxR-minR)*Math.max(0,td/animW):hit?maxR*.8:maxR;
 
-    // Circle opacity: base + proximity boost when near great-to-perfect timing
-    const nearTiming=td<120; // within great timing window
-    const circleA=Math.min(1, circleBaseA+(nearTiming?.10:0));
-    ctx.globalAlpha=circleA;
+    // Circle opacity: ramp from circleBase to timingHi as dot approaches
+    let circleA=so[1]; // base circle opacity
+    if(td<200&&td!==Infinity){
+      // Within timing window: ramp from timingLo (at 200ms) to timingHi (at 0ms)
+      const t=1-td/200; // 0 at 200ms, 1 at 0ms
+      circleA=so[2]+(so[3]-so[2])*t;
+    }
+    ctx.globalAlpha=Math.min(1,circleA);
 
     ctx.beginPath();ctx.arc(v.x,v.y,r+4,0,Math.PI*2);
     ctx.fillStyle=hit?'rgba(255,255,255,0.08)':col+'11';ctx.fill();
@@ -777,15 +797,18 @@ function drawGlyph(){
       ctx.font='10px Orbitron';ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.fillStyle='#00ffaa88';ctx.fillText('PLAY',v.x,v.y);
     } else if(hit){
-      ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fill();
-      ctx.strokeStyle='#ffffff88';ctx.lineWidth=1.5;
-      ctx.beginPath();ctx.moveTo(v.x-4,v.y);ctx.lineTo(v.x-1,v.y+3);ctx.lineTo(v.x+5,v.y-3);ctx.stroke();
+      // Outer filled ring
+      ctx.beginPath();ctx.arc(v.x,v.y,r,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fill();
+      // Inner filled dot
+      ctx.beginPath();ctx.arc(v.x,v.y,3.5,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,0.35)';ctx.fill();
     }
   });
 
-  // Dot — glyph opacity (fades fully at streak 4)
+  // Dot — glyph opacity
   if(phaseActive){
-    ctx.globalAlpha=glyphA;
+    ctx.globalAlpha=so[0];
     const p=getDotPos();
     ctx.beginPath();ctx.arc(p.x,p.y,16,0,Math.PI*2);
     ctx.fillStyle='rgba(0,255,170,0.15)';ctx.fill();
