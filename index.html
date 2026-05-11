@@ -182,6 +182,7 @@ let currentEnemyDmg=BASE_ENEMY_DMG;
 
 let slotIcons=[], slotBeats=[];
 let slotPhase='idle', slotTimer=0, slotRollAnim=0;
+let activeSlots=3;
 let slotSchedule=[], slotScheduleTime=0, slotScheduleIdx=0;
 let slotRevealedIcons=[];
 let slotBeatLines=[], slotBeatFlash=[];
@@ -249,8 +250,9 @@ function showRollButton(){
   $('roll-btn').style.display='block';
   $('result-display').textContent='';
   slotPhase='waiting';
-  slotRevealedIcons=new Array(slotCount).fill(false);
-  slotBeatLines=new Array(slotCount).fill(0); slotBeatFlash=new Array(slotCount).fill(0);
+  activeSlots=slotCount; // reset to base (no streak bonus)
+  slotRevealedIcons=new Array(activeSlots).fill(false);
+  slotBeatLines=new Array(activeSlots).fill(0); slotBeatFlash=new Array(activeSlots).fill(0);
   baseValues={sword:0,shield:0,gold:0};
   tapValues={sword:0,shield:0,gold:0};
   isAllPerfect=false;
@@ -259,9 +261,10 @@ function showRollButton(){
 function startSlotPhase(){
   $('roll-btn').style.display='none';
   $('result-display').textContent='';
-  slotIcons=Array.from({length:slotCount},rollIcon);
-  slotBeats=Array.from({length:slotCount},rollBeat);
-  slotRevealedIcons=new Array(slotCount).fill(false);
+  activeSlots=slotCount+getStreakSlotCount();
+  slotIcons=Array.from({length:activeSlots},rollIcon);
+  slotBeats=Array.from({length:activeSlots},rollBeat);
+  slotRevealedIcons=new Array(activeSlots).fill(false);
   slotPhase='rolling'; slotRollAnim=0;
   phaseActive=false; showingResults=false;
 
@@ -273,7 +276,7 @@ function startSlotPhase(){
   // Build reveal schedule
   const edges=[1]; let vp=1;
   const iconVerts=[];
-  for(let i=0;i<slotCount;i++){
+  for(let i=0;i<activeSlots;i++){
     iconVerts.push(vp);
     const bt=slotBeats[i];
     if(bt==='F'){ edges.push(1); vp+=1; }
@@ -285,13 +288,13 @@ function startSlotPhase(){
   // Map HH intermediate vertices to their slot
   const vertToSlot={};
   let vc=1;
-  for(let i=0;i<slotCount;i++){
+  for(let i=0;i<activeSlots;i++){
     if(slotBeats[i]==='HH') vertToSlot[vc+1]=i;
     vc+=(slotBeats[i]==='HH'?2:1);
   }
 
   slotSchedule=[{time:0,action:'init',slot:-1}];
-  slotBeatLines=new Array(slotCount).fill(0); slotBeatFlash=new Array(slotCount).fill(0);
+  slotBeatLines=new Array(activeSlots).fill(0); slotBeatFlash=new Array(activeSlots).fill(0);
   let t=0;
   for(let e=0;e<edges.length;e++){
     t+=edges[e]*BEAT*1000;
@@ -323,14 +326,14 @@ function updateSlots(dt){
       }
       slotScheduleIdx++;
     }
-    for(let i=0;i<slotCount;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
+    for(let i=0;i<activeSlots;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(slotScheduleIdx>=slotSchedule.length){
       slotPhase='show-result'; slotTimer=BEAT*800;
       if(slotIcons.every(ic=>ic===slotIcons[0])) sfx.triple();
     }
   } else if(slotPhase==='show-result'){
     slotTimer-=dt;
-    for(let i=0;i<slotCount;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
+    for(let i=0;i<activeSlots;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(slotTimer<=0) startGlyphPhase();
   }
 }
@@ -339,7 +342,7 @@ function updateSlots(dt){
 function buildRhythmFromSlots(){
   const edges=[1]; // init edge
   iconDotVertices=[]; let vp=1;
-  for(let i=0;i<slotCount;i++){
+  for(let i=0;i<activeSlots;i++){
     iconDotVertices.push(vp);
     const bt=slotBeats[i];
     if(bt==='F'){ edges.push(1); vp+=1; }
@@ -427,7 +430,7 @@ function startGlyphPhase(){
   const SINGLE_BASE={sword:20,shield:15,gold:1};
   if(allSame){
     const ic=slotIcons[0];
-    baseValues[ic]=Math.round(SINGLE_BASE[ic]*slotCount*1.5);
+    baseValues[ic]=Math.round(SINGLE_BASE[ic]*activeSlots*1.5);
   } else {
     slotIcons.forEach(ic=>{ baseValues[ic]+=SINGLE_BASE[ic]; });
   }
@@ -524,15 +527,20 @@ function spawnParticles(x,y,rating){
 // Opacity table: [glyphAlpha, circleBase, timingLo, timingHi]
 const STREAK_OPACITY = [
   [1.00, 1.00, 1.00, 1.00], // streak 0
-  [0.66, 0.75, 0.70, 0.90], // streak 1
-  [0.33, 0.40, 0.50, 0.70], // streak 2
-  [0.10, 0.15, 0.22, 0.30], // streak 3
-  [0.00, 0.05, 0.10, 0.15], // streak 4
-  [0.00, 0.00, 0.05, 0.10], // streak 5+
+  [1.00, 1.00, 1.00, 1.00], // streak 1 — full visibility
+  [1.00, 1.00, 1.00, 1.00], // streak 2 — full visibility + extra slot
+  [0.66, 0.75, 0.70, 0.90], // streak 3 — fade begins
+  [0.33, 0.40, 0.50, 0.70], // streak 4
+  [0.10, 0.15, 0.22, 0.30], // streak 5
+  [0.00, 0.05, 0.10, 0.15], // streak 6
+  [0.00, 0.00, 0.05, 0.10], // streak 7+
 ];
 function getStreakOpacity(){
   const i=Math.min(streakCount, STREAK_OPACITY.length-1);
   return STREAK_OPACITY[i];
+}
+function getStreakSlotCount(){
+  return (streakCount>=2?1:0); // +1 slot at streak 2+
 }
 
 function finishPlaying(){
@@ -692,9 +700,9 @@ function drawBG(){
 function drawSlots(){
   if(slotPhase==='idle') return;
   const cx=W()/2, sy=H()*.28, sw=56, sh=64, gap=10;
-  const sx=cx-(sw*slotCount+gap*(slotCount-1))/2;
+  const sx=cx-(sw*activeSlots+gap*(activeSlots-1))/2;
 
-  for(let i=0;i<slotCount;i++){
+  for(let i=0;i<activeSlots;i++){
     const x=sx+i*(sw+gap), y=sy-sh/2, rev=slotRevealedIcons[i];
     ctx.strokeStyle=rev?'#cccccc':'#ffffff22';
     ctx.lineWidth=rev?2:1; ctx.strokeRect(x,y,sw,sh);
@@ -707,7 +715,7 @@ function drawSlots(){
 
   // Beat indicators
   const by=sy+sh/2+8, lh=3, lp=4;
-  for(let i=0;i<slotCount;i++){
+  for(let i=0;i<activeSlots;i++){
     if(slotBeatLines[i]<=0) continue;
     const x=sx+i*(sw+gap), bt=slotBeats[i];
     const fl=slotBeatFlash[i]>0?.5+(slotBeatFlash[i]/300)*.5:.3;
@@ -724,7 +732,7 @@ function drawIndicators(){
   if(slotPhase==='idle') return;
   const cx=W()/2, y=H()*.73;
   const names=['sword','shield','gold'];
-  const gap=Math.min(slotCount>3?100:140,W()*.35), sx=cx-gap*(names.length-1)/2;
+  const gap=Math.min(activeSlots>3?100:140,W()*.35), sx=cx-gap*(names.length-1)/2;
 
   names.forEach((n,i)=>{
     const x=sx+i*gap, bv=baseValues[n], tv=tapValues[n], has=bv>0||tv>0;
