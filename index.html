@@ -110,7 +110,13 @@ canvas{display:block;width:100%;height:100%}
       Watch the slots roll on beat<br>
       Then press <span>SPACE</span> or <span>TAP</span> at each intersection
     </div>
-    <button class="btn" id="start-btn">BEGIN</button>
+    <div id="load-wrap" style="width:60%;max-width:200px;margin-bottom:20px">
+      <div style="font:9px Orbitron;color:#556;margin-bottom:4px;text-align:center" id="load-text">Loading assets...</div>
+      <div style="width:100%;height:8px;border:1px solid #00ffaa44;border-radius:2px;overflow:hidden;background:rgba(0,0,0,.4)">
+        <div id="load-bar" style="height:100%;width:0%;background:#00ffaa;transition:width .2s;border-radius:1px"></div>
+      </div>
+    </div>
+    <button class="btn" id="start-btn" style="display:none">BEGIN</button>
   </div>
   <div id="gameover-screen" class="overlay">
     <h1 id="go-title">DEFEATED</h1>
@@ -1120,7 +1126,48 @@ addEventListener('keydown',e=>{
 gameWrap.addEventListener('pointerdown',e=>{if(!paused&&e.target.id!=='pause-btn')handleHit()});
 $('pause-btn').addEventListener('click',togglePause);
 $('resume-btn').addEventListener('click',togglePause);
-$('start-btn').addEventListener('click',()=>{ensureAC();preloadAudio();$('start-screen').style.display='none';showRollButton()});
+// Asset loading
+(async function loadAllAssets(){
+  ensureAC();
+  const audioFiles=[
+    ['slot','Slot.wav'],['sword','Sword.wav'],['shield','Shield.wav'],
+    ['coin','Coin.wav'],['snare','Snare.wav'],
+    ['bow_charge','Bow_charge.wav'],['bow_shoot','Bow_Shoot.wav']
+  ];
+  const imageNames=['sword','shield','gold','bow'];
+  const total=audioFiles.length+imageNames.length;
+  let loaded=0;
+
+  function updateBar(){
+    loaded++;
+    const pct=Math.floor(loaded/total*100);
+    $('load-bar').style.width=pct+'%';
+    $('load-text').textContent='Loading... '+loaded+'/'+total;
+    if(loaded>=total){
+      $('load-text').textContent='Ready!';
+      $('start-btn').style.display='';
+    }
+  }
+
+  // Load audio
+  for(const [name,file] of audioFiles){
+    try{ await loadAudio(name,file); }catch(e){}
+    updateBar();
+  }
+
+  // Load images
+  for(const name of imageNames){
+    await new Promise(res=>{
+      const img=iconImages[name];
+      if(!img){res();return;}
+      if(img.complete){res();return;}
+      img.onload=res; img.onerror=res;
+    });
+    updateBar();
+  }
+})();
+
+$('start-btn').addEventListener('click',()=>{$('start-screen').style.display='none';showRollButton()});
 $('restart-btn').addEventListener('click',resetGame);
 $('roll-btn').addEventListener('click',()=>{ensureAC();startSlotPhase()});
 
