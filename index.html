@@ -260,7 +260,8 @@ const SHOP_POOL = [
   {id:'upgrade_shield',name:'Upgrade Shield',desc:'+10% shield val\n+2 per tap',icon:'🛡',type:'passive',baseCost:30,inc:30},
   {id:'upgrade_hp',name:'Upgrade HP',desc:'+10% max HP',icon:'❤',type:'passive',baseCost:30,inc:30},
   {id:'health_potion',name:'Health Potion',desc:'+100 HP',icon:'🧪',type:'usable',baseCost:20,inc:0},
-  {id:'bow',name:'Bow',desc:'New icon type\nDouble HH chance',icon:'🏹',type:'special',baseCost:50,inc:0},
+  {id:'bow',name:'Bow Slot',desc:'Charge on half beat\\nShoot on full beat',icon:'🏹',type:'special',baseCost:50,inc:0},
+  {id:'upgrade_bow',name:'Upgrade Bow',desc:'+10% bow charge\\n+2 per tap',icon:'🏹',type:'passive',baseCost:30,inc:30,requires:'bow'},
 ];
 let upgradeCounts={sword:0,shield:0,hp:0,bow:0};
 let passiveSlots=[{id:'sword',icon:'⚔',name:'Sword',cost:0},{id:'shield',icon:'🛡',name:'Shield',cost:0},{id:'gold',icon:'💰',name:'Coin',cost:0}]; // max 5
@@ -858,7 +859,7 @@ function evalHit(){
     const sinceArrival=BEAT*1000-endPauseTimer;
     const lastV=glyphEdges[glyphEdges.length-1].to;
     if(!intHits[lastV]){
-      if(sinceArrival<110) return {rating:'PERFECT',nearEnd:true,forceIdx:lastV};
+      if(sinceArrival<75) return {rating:'PERFECT',nearEnd:true,forceIdx:lastV};
       if(sinceArrival<170) return {rating:'GREAT',nearEnd:true,forceIdx:lastV};
       if(sinceArrival<230) return {rating:'COOL',nearEnd:true,forceIdx:lastV};
     }
@@ -867,7 +868,7 @@ function evalHit(){
   const ms=edgeDurs[dotSeg]*1000;
   const tEnd=(1-dotProg)*ms, tStart=dotProg*ms;
   const near=tEnd<tStart, td=Math.min(tEnd,tStart);
-  if(td<110) return {rating:'PERFECT',nearEnd:near};
+  if(td<75) return {rating:'PERFECT',nearEnd:near};
   if(td<170) return {rating:'GREAT',nearEnd:near};
   if(td<230) return {rating:'COOL',nearEnd:near};
   return {rating:'MISS',nearEnd:near};
@@ -1071,9 +1072,7 @@ function advanceEnemy(){
   else enemyMaxHP=300+(enemyNum-10)*50;
   enemyHP=enemyMaxHP;
   // ATK: +5/lvl (1-4), +10/lvl (5-10), +20/lvl (11+)
-  if(enemyNum<=4) currentEnemyDmg=25+(enemyNum-1)*5;
-  else if(enemyNum<=10) currentEnemyDmg=45+(enemyNum-4)*10;
-  else currentEnemyDmg=105+(enemyNum-10)*20;
+  currentEnemyDmg=25+(enemyNum-1)*5;
   playerHP=PLAYER_MAX_HP; playerShield=0;
   streakCount=0; streakActive=false;
   updateTempo(); updateUI();
