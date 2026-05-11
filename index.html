@@ -26,7 +26,7 @@ canvas{display:block;width:100%;height:100%}
 #e-atk{font:8px 'Orbitron',monospace;color:#ff336666;letter-spacing:1px}
 
 /* Player section */
-#player-section{position:absolute;bottom:0.5%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:300px;pointer-events:none}
+#player-section{position:absolute;bottom:3%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:300px;pointer-events:none}
 #p-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;padding:0 4px}
 #p-hp-txt{font:10px 'Orbitron',monospace;color:#00ffaa;text-shadow:0 0 8px #00ffaa66}
 #gold-display{font:10px 'Orbitron',monospace;color:#ffaa00;text-shadow:0 0 8px #ffaa0044}
@@ -117,7 +117,7 @@ canvas{display:block;width:100%;height:100%}
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
-// ── Audio ──
+// ── Audio — Web Audio API AudioBuffer for low latency ──
 const AC = window.AudioContext || window.webkitAudioContext;
 let ac;
 function ensureAC(){ if(!ac) ac = new AC() }
@@ -130,51 +130,56 @@ function tone(f,d,v=.12,t='sine'){
   o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);
 }
 
-// ── MP3 Sound Effects ──
 const AUDIO_BASE = 'https://raw.githubusercontent.com/dic1405/RhyHero/main/';
-const mp3Cache = {};
+const audioBuffers = {};
 
-function loadMP3(name, url){
-  const audio = new Audio(url);
-  audio.preload = 'auto';
-  mp3Cache[name] = audio;
+async function loadAudioBuffer(name, url){
+  try {
+    const resp = await fetch(url);
+    const arr = await resp.arrayBuffer();
+    ensureAC();
+    audioBuffers[name] = await ac.decodeAudioData(arr);
+  } catch(e){ console.warn('Audio load failed:', name, e); }
 }
-loadMP3('slot', AUDIO_BASE + 'Slot.wav');
-loadMP3('sword', AUDIO_BASE + 'Sword.wav');
-loadMP3('shield', AUDIO_BASE + 'Shield.wav');
-loadMP3('coin', AUDIO_BASE + 'Coin.wav');
-loadMP3('snare', AUDIO_BASE + 'Snare.wav');
 
-function playMP3(name, vol=1.0){
-  const src = mp3Cache[name];
-  if(!src) return;
-  const a = src.cloneNode();
-  a.volume = Math.min(1, vol);
-  a.play().catch(()=>{});
+function playBuffer(name, vol=1.0){
+  ensureAC();
+  const buf = audioBuffers[name];
+  if(!buf) return;
+  const src = ac.createBufferSource();
+  const gain = ac.createGain();
+  src.buffer = buf;
+  gain.gain.value = Math.min(1, vol);
+  src.connect(gain);
+  gain.connect(ac.destination);
+  src.start(0);
+}
+
+// Preload audio — will decode when AudioContext is available
+function preloadAllAudio(){
+  ensureAC();
+  loadAudioBuffer('slot', AUDIO_BASE + 'Slot.wav');
+  loadAudioBuffer('sword', AUDIO_BASE + 'Sword.wav');
+  loadAudioBuffer('shield', AUDIO_BASE + 'Shield.wav');
+  loadAudioBuffer('coin', AUDIO_BASE + 'Coin.wav');
+  loadAudioBuffer('snare', AUDIO_BASE + 'Snare.wav');
 }
 
 const sfx = {
-  slotTick(){ playMP3('slot', 0.5) },
   slotLand(icon){
-    // Play icon-specific sound when slot lands
-    if(icon==='sword') playMP3('sword');
-    else if(icon==='shield') playMP3('shield');
-    else if(icon==='gold') playMP3('coin');
-    else playMP3('slot');
+    if(icon==='sword') playBuffer('sword');
+    else if(icon==='shield') playBuffer('shield');
+    else if(icon==='gold') playBuffer('coin');
+    else playBuffer('slot');
   },
-  slotRoll(){ playMP3('slot', 0.6) },
-  beatSlotF(){ playMP3('slot', 0.7) },
-  beatSlotHH(){ playMP3('slot', 0.5); setTimeout(()=>playMP3('slot', 0.5), BEAT*1000*0.5) },
-  perfect(){ tone(880,.15,.15); setTimeout(()=>tone(1320,.12,.12),60) },
-  great(){ tone(660,.12,.1) },
-  cool(){ tone(440,.1,.08) },
+  tick(){ playBuffer('snare', 0.5) },
   miss(){ tone(150,.2,.1,'sawtooth') },
   enemyHit(){ tone(100,.3,.15,'sawtooth') },
   triple(){ [0,60,120,180].forEach((d,i)=>setTimeout(()=>tone(800+i*200,.12,.12),d)) },
   nextEnemy(){ tone(600,.15,.12); setTimeout(()=>tone(800,.15,.12),120); setTimeout(()=>tone(1000,.2,.1),240) },
   defeat(){ [0,150,300].forEach((d,i)=>setTimeout(()=>tone(300-i*80,.4,.12,'sawtooth'),d)) },
-  tick(){ playMP3('snare', 0.5) },
 };
+function playMP3(name, vol){ playBuffer(name, vol); }
 
 // ── Constants ──
 const BEAT = 60/85; // seconds per full beat (85 BPM)
@@ -184,6 +189,26 @@ const BASE_ENEMY_DMG = 50;
 const ICONS = ['sword','shield','gold'];
 const ICON_SYMBOLS = { sword:'⚔', shield:'🛡', gold:'💰' };
 const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00' };
+
+// ── PNG Icons ──
+const ICON_IMG_BASE = 'https://raw.githubusercontent.com/dic1405/RhyHero/main/';
+const iconImages = {};
+function loadIcon(name, file){
+  const img = new Image();
+  img.src = ICON_IMG_BASE + file;
+  iconImages[name] = img;
+}
+loadIcon('sword', 'icon_sword.png');
+loadIcon('shield', 'icon_shield.png');
+loadIcon('gold', 'icon_coin.png');
+
+function drawIcon(name, cx, cy, size){
+  const img = iconImages[name];
+  if(!img || !img.complete) return;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, cx - size/2, cy - size/2, size, size);
+  ctx.imageSmoothingEnabled = true;
+}
 
 // ── State ──
 let playerHP = PLAYER_MAX_HP;
@@ -233,16 +258,17 @@ let paused = false;
 
 // BG
 const bgP = [];
-for(let i=0;i<40;i++) bgP.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.00005,vy:(Math.random()-.5)*.00005,r:Math.random()*2+.5,a:Math.random()*.3});
+for(let i=0;i<15;i++) bgP.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.00005,vy:(Math.random()-.5)*.00005,r:Math.random()*2+.5,a:Math.random()*.3});
 
 // ── Canvas ──
 const gameWrap = document.getElementById('game-wrap');
+const DPR = Math.min(devicePixelRatio || 1, 2);
 function resize(){
   const w = gameWrap.clientWidth;
   const h = gameWrap.clientHeight;
-  canvas.width = w * devicePixelRatio;
-  canvas.height = h * devicePixelRatio;
-  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  canvas.width = w * DPR;
+  canvas.height = h * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
 addEventListener('resize',resize); resize();
 const W=()=>gameWrap.clientWidth, H=()=>gameWrap.clientHeight;
@@ -560,13 +586,6 @@ function startGlyphPhase(){
   tapValues = { sword:0, shield:0, gold:0 };
   allPerfectSoFar = true;
   isAllPerfect = false;
-
-  const label = document.getElementById('phase-label');
-  label.textContent = '⚔ PLAY';
-  label.style.color = '#00ffaa';
-  label.style.textShadow = '0 0 30px #00ffaa66';
-  label.style.opacity = 1;
-  setTimeout(()=>{ label.style.opacity = 0 }, 500);
 }
 
 // ── Dot & Hit ──
@@ -676,12 +695,12 @@ function spawnCoinParticles(x, y, rating){
   const count = rating === 'PERFECT' ? 3 : rating === 'GREAT' ? 2 : 1;
   for(let i = 0; i < count; i++){
     floatingAnims.push({
+      type: 'coin',
       x: x + (Math.random()-0.5) * 20,
       y: y,
       vx: (Math.random()-0.5) * 2,
       vy: -3 - Math.random() * 2,
       life: 1,
-      text: '💰',
       size: 14 + Math.random() * 4
     });
   }
@@ -700,13 +719,13 @@ function updateFloatingAnims(dt){
 }
 
 function drawFloatingAnims(){
+  // Coin particles
   floatingAnims.forEach(a => {
     ctx.globalAlpha = Math.max(0, a.life);
-    ctx.font = a.size + 'px serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(a.text, a.x, a.y);
+    drawIcon('gold', a.x, a.y, a.size);
     ctx.globalAlpha = 1;
   });
+  // Slash anims on enemy
   slashAnims.forEach(a => {
     const t = 1 - a.life;
     ctx.save(); ctx.translate(a.x, a.y);
@@ -717,22 +736,14 @@ function drawFloatingAnims(){
     ctx.moveTo(-len, -len*0.6); ctx.lineTo(len, len*0.6); ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(len*0.8, -len*0.5); ctx.lineTo(-len*0.8, len*0.5); ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 0, 20+t*20, 0, Math.PI*2);
-    const g = ctx.createRadialGradient(0,0,0,0,0,20+t*20);
-    g.addColorStop(0,'rgba(255,68,102,0.3)'); g.addColorStop(1,'transparent');
-    ctx.fillStyle = g; ctx.fill();
     ctx.globalAlpha = 1; ctx.restore();
   });
+  // Shield anims on player
   shieldAnims.forEach(a => {
     const t = 1 - a.life;
     const slideY = a.y - t * 30;
     ctx.globalAlpha = Math.max(0, a.life);
-    ctx.font = '20px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🛡', a.x, slideY);
-    ctx.beginPath(); ctx.arc(a.x, slideY, 18, 0, Math.PI*2);
-    const g = ctx.createRadialGradient(a.x,slideY,0,a.x,slideY,18);
-    g.addColorStop(0,'rgba(68,136,255,0.3)'); g.addColorStop(1,'transparent');
-    ctx.fillStyle = g; ctx.fill();
+    drawIcon('shield', a.x, slideY, 24);
     ctx.globalAlpha = 1;
   });
 }
@@ -862,29 +873,21 @@ function drawEnemyTurn(){
   ctx.fillRect(0, cy - 50, W(), 100);
 
   if(enemyTurnPhase === 'attack'){
-    // Show attack icon + value
-    ctx.font = '42px serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#fff';
-    ctx.fillText('💀', cx, cy - 8);
-
+    drawIcon('sword', cx, cy - 8, 36);
     ctx.font = '18px Orbitron';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ff3366';
     ctx.fillText(`ATK ${currentEnemyDmg}`, cx, cy + 30);
   } else {
-    // Show reaction — what happened
-    ctx.font = '42px serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
     if(enemyTurnAbsorbed > 0 && enemyTurnDmg > 0){
-      ctx.fillStyle = '#fff';
-      ctx.fillText('🛡💔', cx, cy - 8);
+      drawIcon('shield', cx - 16, cy - 8, 28);
       ctx.font = '15px Orbitron';
       ctx.fillStyle = '#ff6666';
       ctx.fillText(`Shield -${enemyTurnAbsorbed}  HP -${enemyTurnDmg}`, cx, cy + 30);
     } else if(enemyTurnAbsorbed > 0){
-      ctx.fillStyle = '#fff';
-      ctx.fillText('🛡', cx, cy - 8);
+      drawIcon('shield', cx, cy - 8, 36);
       ctx.font = '16px Orbitron';
       ctx.fillStyle = '#4488ff';
       ctx.fillText(`Shield absorbed ${enemyTurnAbsorbed}!`, cx, cy + 30);
@@ -898,12 +901,9 @@ function drawEnemyTurn(){
 
     // Flash
     const flash = Math.sin(glow * 15) * 0.3 + 0.7;
-    ctx.globalAlpha = flash;
-    ctx.beginPath(); ctx.arc(cx, cy, 55, 0, Math.PI*2);
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 55);
-    g.addColorStop(0, 'rgba(255,51,102,0.15)');
-    g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g; ctx.fill();
+    ctx.globalAlpha = flash * 0.15;
+    ctx.fillStyle = '#ff3366';
+    ctx.beginPath(); ctx.arc(cx, cy, 40, 0, Math.PI*2); ctx.fill();
     ctx.globalAlpha = 1;
   }
 }
@@ -994,6 +994,7 @@ document.getElementById('pause-btn').addEventListener('click', togglePause);
 document.getElementById('resume-btn').addEventListener('click', togglePause);
 document.getElementById('start-btn').addEventListener('click',()=>{
   ensureAC();
+  preloadAllAudio();
   document.getElementById('start-screen').style.display='none';
   showRollButton();
 });
@@ -1005,9 +1006,7 @@ document.getElementById('roll-btn').addEventListener('click',()=>{
 
 // ── Drawing ──
 function drawBG(){
-  const g=ctx.createRadialGradient(W()/2,H()/2,0,W()/2,H()/2,W()*.7);
-  g.addColorStop(0,'#12121a');g.addColorStop(1,'#08080c');
-  ctx.fillStyle=g;ctx.fillRect(0,0,W(),H());
+  ctx.fillStyle='#0d0d14';ctx.fillRect(0,0,W(),H());
   bgP.forEach(p=>{
     p.x+=p.vx;p.y+=p.vy;
     if(p.x<0)p.x=1;if(p.x>1)p.x=0;if(p.y<0)p.y=1;if(p.y>1)p.y=0;
@@ -1038,17 +1037,11 @@ function drawSlots(){
     ctx.fillRect(x, y, slotW, slotH);
 
     if(revealed){
-      ctx.font = '24px serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#fff';
-      ctx.fillText(ICON_SYMBOLS[slotIcons[i]], x+slotW/2, y+slotH/2);
+      drawIcon(slotIcons[i], x+slotW/2, y+slotH/2, 28);
     } else if(slotPhase==='rolling' && !slotRevealedIcons[i]){
       const spinIcon = ICONS[Math.floor(slotRollAnim*8)%3];
-      ctx.font = '24px serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.globalAlpha = 0.4;
-      ctx.fillStyle = '#fff';
-      ctx.fillText(ICON_SYMBOLS[spinIcon], x+slotW/2, y+slotH/2);
+      drawIcon(spinIcon, x+slotW/2, y+slotH/2, 28);
       ctx.globalAlpha = 1;
     }
   }
@@ -1099,9 +1092,9 @@ function drawIndicators(){
 
   // Always show all 3 icons — values start at 0, update when slots land
   const entries = [
-    { icon:'⚔', base:baseValues.sword, tap:tapValues.sword, color:ICON_COLORS.sword },
-    { icon:'🛡', base:baseValues.shield, tap:tapValues.shield, color:ICON_COLORS.shield },
-    { icon:'💰', base:baseValues.gold, tap:tapValues.gold, color:ICON_COLORS.gold },
+    { iconName:'sword', base:baseValues.sword, tap:tapValues.sword, color:ICON_COLORS.sword },
+    { iconName:'shield', base:baseValues.shield, tap:tapValues.shield, color:ICON_COLORS.shield },
+    { iconName:'gold', base:baseValues.gold, tap:tapValues.gold, color:ICON_COLORS.gold },
   ];
 
   const gap = Math.min(140, W()*0.35);
@@ -1112,11 +1105,8 @@ function drawIndicators(){
     const hasValue = e.base > 0 || e.tap > 0;
 
     // Icon
-    ctx.font = '22px serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.globalAlpha = hasValue ? 1 : 0.3;
-    ctx.fillStyle = '#fff';
-    ctx.fillText(e.icon, x - 45, y);
+    drawIcon(e.iconName, x - 45, y, 22);
 
     // Base value
     ctx.font = '16px Orbitron';
@@ -1135,12 +1125,6 @@ function drawIndicators(){
       ctx.fillStyle = '#ffaa00';
       ctx.font = '12px Orbitron';
       ctx.fillText('×1.5', x + 30, y);
-
-      ctx.beginPath(); ctx.arc(x, y, 35, 0, Math.PI*2);
-      const g = ctx.createRadialGradient(x, y, 0, x, y, 35);
-      g.addColorStop(0, 'rgba(255,170,0,0.1)');
-      g.addColorStop(1, 'transparent');
-      ctx.fillStyle = g; ctx.fill();
     }
   });
 }
@@ -1218,12 +1202,11 @@ function drawGlyph(){
     ctx.stroke();
 
     if(isInit && i === 0){
-      // Start marker on first vertex only
-      ctx.save(); ctx.translate(v.x, v.y);
-      ctx.fillStyle = '#ffffff44';
-      ctx.beginPath();
-      ctx.moveTo(-3,-4); ctx.lineTo(4,0); ctx.lineTo(-3,4); ctx.closePath();
-      ctx.fill(); ctx.restore();
+      // "PLAY" label at init dot
+      ctx.font = '10px Orbitron';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#00ffaa88';
+      ctx.fillText('PLAY', v.x, v.y);
     } else if(hit && !isInit){
       ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fill();
       ctx.strokeStyle='#ffffff88';ctx.lineWidth=1.5;
@@ -1239,9 +1222,7 @@ function drawGlyph(){
     const px = p.x, py = p.y;
 
     ctx.beginPath();ctx.arc(px,py,16,0,Math.PI*2);
-    const tg=ctx.createRadialGradient(px,py,0,px,py,16);
-    tg.addColorStop(0,'rgba(0,255,170,0.5)');tg.addColorStop(1,'transparent');
-    ctx.fillStyle=tg;ctx.fill();
+    ctx.fillStyle='rgba(0,255,170,0.15)';ctx.fill();
     ctx.beginPath();ctx.arc(px,py,7.5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
     ctx.beginPath();ctx.arc(px,py,4.5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
   }
@@ -1254,10 +1235,8 @@ function drawEnemy(){
   const hpR=enemyHP/enemyMaxHP;
 
   ctx.save();ctx.translate(cx,cy);
-  ctx.beginPath();ctx.arc(0,0,sz+15,0,Math.PI*2);
-  const g=ctx.createRadialGradient(0,0,sz,0,0,sz+15);
-  g.addColorStop(0,`rgba(255,51,102,${.2*hpR})`);g.addColorStop(1,'transparent');
-  ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ctx.arc(0,0,sz+10,0,Math.PI*2);
+  ctx.fillStyle=`rgba(255,51,102,${.08*hpR})`;ctx.fill();
 
   ctx.beginPath();ctx.arc(0,-4,sz*.8,0,Math.PI*2);
   ctx.fillStyle='rgba(40,15,25,.9)';ctx.fill();
@@ -1282,10 +1261,8 @@ function drawPlayer(){
   const cx=W()/2,cy=H()*.83;
   const pulse=Math.sin(glow*2.5)*2;
   ctx.save();ctx.translate(cx,cy);
-  ctx.beginPath();ctx.arc(0,0,30,0,Math.PI*2);
-  const g=ctx.createRadialGradient(0,0,10,0,0,30);
-  g.addColorStop(0,'rgba(0,255,170,.15)');g.addColorStop(1,'transparent');
-  ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ctx.arc(0,0,25,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,255,170,.06)';ctx.fill();
   ctx.strokeStyle='#00ffaa88';ctx.lineWidth=2;
   ctx.beginPath();ctx.arc(0,-12,8+pulse*.3,0,Math.PI*2);ctx.stroke();
   ctx.beginPath();
