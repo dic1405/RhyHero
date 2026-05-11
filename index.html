@@ -163,7 +163,12 @@ const BASE_BPM = 85;
 let currentBPM = BASE_BPM;
 let BEAT = 60/BASE_BPM;
 let slotCount = 3;
-function updateTempo(){ currentBPM=BASE_BPM+(enemyNum-1)*10; BEAT=60/currentBPM; slotCount=enemyNum>=5?4:3; }
+function updateTempo(){
+  if(enemyNum<=4){ currentBPM=60+enemyNum*10; slotCount=3; }
+  else if(enemyNum<=7){ currentBPM=100+(enemyNum-5)*5; slotCount=4; }
+  else { currentBPM=110+(enemyNum-8)*5; slotCount=5; }
+  BEAT=60/currentBPM;
+}
 const PLAYER_MAX_HP = 300;
 const BASE_ENEMY_HP = 100;
 const BASE_ENEMY_DMG = 50;
