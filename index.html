@@ -82,11 +82,11 @@ canvas{display:block;width:100%;height:100%}
     <div id="e-label">ENEMY 1</div>
     <div id="e-hp-wrap" class="bar-wrap"><div id="e-hp-fill" class="bar-fill"></div></div>
     <div id="e-hp-txt">150/150</div>
-    <div id="e-atk">ATK: 30</div>
+    <div id="e-atk">ATK: 25</div>
   </div>
   <div id="player-section">
     <div id="p-row">
-      <div id="p-hp-txt">HP 300/300</div>
+      <div id="p-hp-txt">HP 100/100</div>
       <div id="gold-display"></div>
     </div>
     <div id="p-hp-wrap" class="bar-wrap"><div id="p-hp-fill" class="bar-fill"></div></div>
@@ -230,9 +230,9 @@ function updateTempo(){
   else { currentBPM=110+(enemyNum-11)*3; slotCount=5; }
   BEAT=60/currentBPM;
 }
-let PLAYER_MAX_HP = 300;
+let PLAYER_MAX_HP = 100;
 const BASE_ENEMY_HP = 150;
-const BASE_ENEMY_DMG = 30;
+const BASE_ENEMY_DMG = 25;
 const ICONS = ['sword','shield','gold'];
 const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00', bow:'#88ff44' };
 const SINGLE_BASE = {sword:25, shield:10, gold:5, bow:20};
@@ -303,7 +303,7 @@ function buyItem(idx){
     upgradeCounts.shield++;
   } else if(item.id==='upgrade_hp'){
     upgradeCounts.hp++;
-    PLAYER_MAX_HP=Math.floor(300*(1+upgradeCounts.hp*0.1));
+    PLAYER_MAX_HP=Math.floor(100*(1+upgradeCounts.hp*0.1));
     playerHP=Math.min(playerHP+30,PLAYER_MAX_HP);
   } else if(item.id==='health_potion'){
     const freeSlot=usableSlots.findIndex(s=>s===null);
@@ -1065,7 +1065,7 @@ function advanceEnemy(){
   else enemyMaxHP=300+(enemyNum-10)*50;
   enemyHP=enemyMaxHP;
   // ATK: +5/lvl (1-4), +10/lvl (5-10), +20/lvl (11+)
-  if(enemyNum<=4) currentEnemyDmg=30+(enemyNum-1)*5;
+  if(enemyNum<=4) currentEnemyDmg=25+(enemyNum-1)*5;
   else if(enemyNum<=10) currentEnemyDmg=45+(enemyNum-4)*10;
   else currentEnemyDmg=105+(enemyNum-10)*20;
   playerHP=PLAYER_MAX_HP; playerShield=0;
@@ -1086,7 +1086,12 @@ function endGame(){
 }
 
 function resetGame(){
-  playerHP=PLAYER_MAX_HP; playerShield=0; gold=0;
+  playerHP=100; playerShield=0; gold=0; PLAYER_MAX_HP=100;
+  upgradeCounts={sword:0,shield:0,hp:0,bow:0};
+  passiveSlots=[{id:'sword',icon:'⚔',name:'Sword',cost:0},{id:'shield',icon:'🛡',name:'Shield',cost:0},{id:'gold',icon:'💰',name:'Coin',cost:0}];
+  usableSlots=[null,null,null]; bowUnlocked=false; rerollCount=0;
+  bowCharge=0; bowShotDmg=0; bowShooting=false; bowFShotCount=0;
+  updateUsableBar();
   enemyNum=1; enemyMaxHP=BASE_ENEMY_HP; enemyHP=BASE_ENEMY_HP;
   currentEnemyDmg=BASE_ENEMY_DMG;
   updateTempo();
