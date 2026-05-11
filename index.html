@@ -13,7 +13,7 @@ body{background:#1c1c26;color:#e0e0e0;font-family:'Rajdhani',sans-serif;overflow
 #game-wrap{position:relative;width:100%;max-width:430px;height:100%;overflow:hidden;padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
 canvas{display:block;width:100%;height:100%}
 #ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
-#ui *{pointer-events:auto}
+#ui button{pointer-events:auto}
 .bar-wrap{position:relative;width:70%;max-width:240px;height:10px;border:1.5px solid;border-radius:2px;overflow:hidden;background:rgba(0,0,0,.6);margin:0 auto}
 .bar-fill{height:100%;transition:width .4s;border-radius:1px}
 #enemy-section{position:absolute;top:13%;left:50%;transform:translateX(-50%);text-align:center;width:80%;max-width:280px;pointer-events:none}
@@ -34,7 +34,7 @@ canvas{display:block;width:100%;height:100%}
 #phase-label{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);font:26px/1 'Orbitron',monospace;font-weight:900;color:#fff;text-shadow:0 0 30px currentColor;opacity:0;transition:opacity .3s;pointer-events:none}
 #hit-fb{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font:18px 'Orbitron',monospace;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .3s;text-align:center;width:90%}
 #result-display{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);font:11px 'Orbitron',monospace;color:#aaa;text-align:center;pointer-events:none;white-space:nowrap}
-.overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(5,5,10,.93);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100}
+.overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(5,5,10,.93);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;pointer-events:auto}
 .overlay h1{font:32px 'Orbitron',monospace;font-weight:900;margin-bottom:14px}
 .overlay p{font:16px 'Rajdhani',sans-serif;color:#888;margin-bottom:20px}
 .btn{font:14px 'Orbitron',monospace;padding:12px 36px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;transition:all .2s}
@@ -684,7 +684,7 @@ addEventListener('keydown',e=>{
   if(e.code==='Escape'){e.preventDefault();togglePause();return;}
   if(!paused&&e.code==='Space'){e.preventDefault();handleHit();}
 });
-canvas.addEventListener('pointerdown',()=>{if(!paused)handleHit()});
+gameWrap.addEventListener('pointerdown',e=>{if(!paused&&e.target.id!=='pause-btn')handleHit()});
 $('pause-btn').addEventListener('click',togglePause);
 $('resume-btn').addEventListener('click',togglePause);
 $('start-btn').addEventListener('click',()=>{ensureAC();preloadAudio();$('start-screen').style.display='none';showRollButton()});
