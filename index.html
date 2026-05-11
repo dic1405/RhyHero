@@ -22,7 +22,7 @@ canvas{display:block;width:100%;height:100%}
 #e-hp-fill{background:linear-gradient(90deg,#ff3366,#cc2255);width:100%}
 #e-hp-txt{font:9px 'Orbitron',monospace;color:#ff3366;text-shadow:0 0 8px #ff336666;margin-bottom:1px}
 #e-atk{font:8px 'Orbitron',monospace;color:#ff336666;letter-spacing:1px}
-#player-section{position:absolute;top:76%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:300px;pointer-events:none}
+#player-section{position:absolute;bottom:2%;left:50%;transform:translateX(-50%);text-align:center;width:85%;max-width:300px;pointer-events:none}
 #p-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;padding:0 4px}
 #p-hp-txt{font:10px 'Orbitron',monospace;color:#00ffaa;text-shadow:0 0 8px #00ffaa66}
 #gold-display{font:10px 'Orbitron',monospace;color:#ffaa00;text-shadow:0 0 8px #ffaa0044}
@@ -263,7 +263,7 @@ function startSlotPhase(){
   $('result-display').textContent='';
   activeSlots=slotCount+getStreakSlotCount();
   slotIcons=Array.from({length:activeSlots},rollIcon);
-  slotBeats=Array.from({length:activeSlots},rollBeat);
+  slotBeats=slotIcons.map(ic=>ic==='sword'?'F':rollBeat());
   slotRevealedIcons=new Array(activeSlots).fill(false);
   slotPhase='rolling'; slotRollAnim=0;
   phaseActive=false; showingResults=false;
@@ -359,9 +359,14 @@ function buildGlyph(edgeMults, cx, cy){
   const baseAngle=Math.PI/3;
   const gameEdges=n-1; // edges after init
   const gameW=edgeMults.slice(1).reduce((a,b)=>a+b,0);
-  const maxW=W()-80;
+  const maxW=W()-60;
+  const maxVH=H()*0.35; // vertical space available for glyph
+  const baseUnit=140*(3/Math.max(3,activeSlots)); // scale down for more slots
   const estH=gameW*Math.cos(baseAngle)*(shapeType===2?.6:1);
-  const unitLen=Math.min(96, estH>0?maxW/estH:96);
+  const estV=gameW*Math.sin(baseAngle);
+  let unitLen=baseUnit;
+  if(estH>0) unitLen=Math.min(unitLen, maxW/estH);
+  if(estV>0) unitLen=Math.min(unitLen, maxVH/estV);
 
   // Compute edge angles — edge 0 is init (vertical down), rest zigzag horizontally
   const angles=[];
@@ -413,7 +418,7 @@ function buildGlyph(edgeMults, cx, cy){
 function startGlyphPhase(){
   slotPhase='playing';
   const em=buildRhythmFromSlots();
-  const g=buildGlyph(em, W()/2, H()*0.53);
+  const g=buildGlyph(em, W()/2, H()*0.58);
   glyphVerts=g.verts; glyphEdges=g.edges; edgeDurs=g.durs;
   totalInts=g.verts.length;
   dotSeg=0; dotProg=0; endPauseTimer=0;
@@ -499,13 +504,13 @@ function applyTap(vi, rating){
     const val=b[icon][rating]; tapValues[icon]+=val;
     if(rating==='PERFECT') shake=Math.min(val/3,3);
     if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); slashAnims.push({life:1,x:W()/2,y:H()*.08}); play('sword',vol); }
-    else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.88}); play('shield',vol); }
+    else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); play('shield',vol); }
     else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin',vol); }
   } else if(vi>0){
     const ab={PERFECT:5,GREAT:2,COOL:1}[rating];
     if(rating==='PERFECT') shake=Math.min(ab/3,2);
     if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); slashAnims.push({life:1,x:W()/2,y:H()*.08}); }
-    if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.88}); }
+    if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.92}); }
     if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating); }
     updateUI(); play('snare',vol*0.5);
   }
@@ -529,20 +534,18 @@ function spawnParticles(x,y,rating){
 // Opacity table: [glyphAlpha, circleBase, timingLo, timingHi]
 const STREAK_OPACITY = [
   [1.00, 1.00, 1.00, 1.00], // streak 0
-  [1.00, 1.00, 1.00, 1.00], // streak 1 — full visibility
-  [1.00, 1.00, 1.00, 1.00], // streak 2 — full visibility + extra slot
-  [0.66, 0.75, 0.70, 0.90], // streak 3 — fade begins
-  [0.33, 0.40, 0.50, 0.70], // streak 4
-  [0.10, 0.15, 0.22, 0.30], // streak 5
-  [0.00, 0.05, 0.10, 0.15], // streak 6
-  [0.00, 0.00, 0.05, 0.10], // streak 7+
+  [0.50, 0.60, 0.70, 0.80], // streak 1
+  [0.10, 0.15, 0.20, 0.30], // streak 2
+  [0.00, 0.05, 0.10, 0.15], // streak 3
+  [0.00, 0.05, 0.10, 0.15], // streak 4 — +1 slot
+  [0.00, 0.05, 0.10, 0.15], // streak 5+
 ];
 function getStreakOpacity(){
   const i=Math.min(streakCount, STREAK_OPACITY.length-1);
   return STREAK_OPACITY[i];
 }
 function getStreakSlotCount(){
-  return (streakCount>=2?1:0); // +1 slot at streak 2+
+  return (streakCount>=4?1:0); // +1 slot at streak 4+
 }
 
 function finishPlaying(){
@@ -740,7 +743,7 @@ function drawSlots(){
 
 function drawIndicators(){
   if(slotPhase==='idle') return;
-  const cx=W()/2, y=H()*.73;
+  const cx=W()/2, y=H()*.82;
   const names=['sword','shield','gold'];
   const gap=Math.min(activeSlots>3?100:140,W()*.35), sx=cx-gap*(names.length-1)/2;
 
@@ -864,16 +867,6 @@ function drawEnemy(){
   ctx.restore();
 }
 
-function drawPlayer(){
-  const cx=W()/2,cy=H()*.88,p=Math.sin(glow*2.5)*2;
-  ctx.save();ctx.translate(cx,cy);
-  ctx.beginPath();ctx.arc(0,0,25,0,Math.PI*2);ctx.fillStyle='rgba(0,255,170,.06)';ctx.fill();
-  ctx.strokeStyle='#00ffaa88';ctx.lineWidth=2;
-  ctx.beginPath();ctx.arc(0,-12,8+p*.3,0,Math.PI*2);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(0,-4);ctx.lineTo(0,10);ctx.moveTo(-10,2);ctx.lineTo(10,2);ctx.moveTo(0,10);ctx.lineTo(-8,20);ctx.moveTo(0,10);ctx.lineTo(8,20);ctx.stroke();
-  ctx.restore();
-}
-
 function updateAnims(dt){
   const decay=dt/800;
   floatingAnims=floatingAnims.filter(a=>a.life>0);
@@ -960,7 +953,7 @@ function update(ts){
 
   ctx.save();
   if(shake>0) ctx.translate((Math.random()-.5)*shake*2,(Math.random()-.5)*shake*2);
-  drawBG(); drawEnemy(); drawPlayer(); drawSlots(); drawIndicators(); drawGlyph();
+  drawBG(); drawEnemy(); drawSlots(); drawIndicators(); drawGlyph();
   ctx.restore();
   drawAnims(); drawEnemyTurn();
   requestAnimationFrame(update);
