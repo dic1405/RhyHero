@@ -57,7 +57,7 @@ canvas{display:block;width:100%;height:100%}
     <div id="e-label">ENEMY 1</div>
     <div id="e-hp-wrap" class="bar-wrap"><div id="e-hp-fill" class="bar-fill"></div></div>
     <div id="e-hp-txt">100/100</div>
-    <div id="e-atk">ATK: 50</div>
+    <div id="e-atk">ATK: 40</div>
   </div>
   <div id="player-section">
     <div id="p-row">
@@ -171,7 +171,7 @@ function updateTempo(){
 }
 const PLAYER_MAX_HP = 300;
 const BASE_ENEMY_HP = 100;
-const BASE_ENEMY_DMG = 50;
+const BASE_ENEMY_DMG = 40;
 const ICONS = ['sword','shield','gold'];
 const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00' };
 
@@ -633,7 +633,10 @@ function drawEnemyTurn(){
 // ── Progression ──
 function advanceEnemy(){
   enemyNum++; enemyMaxHP=BASE_ENEMY_HP+(enemyNum-1)*50;
-  enemyHP=enemyMaxHP; currentEnemyDmg=BASE_ENEMY_DMG+(enemyNum-1)*10;
+  enemyHP=enemyMaxHP;
+  if(enemyNum<=3) currentEnemyDmg=40+(enemyNum-1)*5;
+  else if(enemyNum<=9) currentEnemyDmg=50+(enemyNum-3)*6;
+  else currentEnemyDmg=86+(enemyNum-9)*7;
   playerHP=PLAYER_MAX_HP; playerShield=0;
   streakCount=0; streakActive=false;
   updateTempo(); updateUI();
