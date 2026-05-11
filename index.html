@@ -152,10 +152,21 @@ const iconImages = {};
 { const i=new Image(); i.src=ASSET_BASE+'icon_coin.png'; iconImages.gold=i; }
 
 function drawIcon(name, cx, cy, size){
-  const img=iconImages[name]; if(!img||!img.complete) return;
-  ctx.imageSmoothingEnabled=false;
-  ctx.drawImage(img, cx-size/2, cy-size/2, size, size);
-  ctx.imageSmoothingEnabled=true;
+  const img=iconImages[name];
+  if(img&&img.complete&&img.naturalWidth>0){
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(img, cx-size/2, cy-size/2, size, size);
+    ctx.imageSmoothingEnabled=true;
+  } else {
+    // Fallback: colored circle with letter
+    const c={sword:'#ff4466',shield:'#4488ff',gold:'#ffaa00'}[name]||'#fff';
+    ctx.fillStyle=c;
+    ctx.beginPath();ctx.arc(cx,cy,size/3,0,Math.PI*2);ctx.fill();
+    ctx.font=Math.floor(size*.4)+'px Orbitron';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#fff';
+    ctx.fillText(name[0].toUpperCase(),cx,cy);
+  }
 }
 
 // ── Constants ──
@@ -174,6 +185,17 @@ const BASE_ENEMY_HP = 80;
 const BASE_ENEMY_DMG = 30;
 const ICONS = ['sword','shield','gold'];
 const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00' };
+const SINGLE_BASE = {sword:25, shield:10, gold:5};
+const MATCH_VALUES = {
+  sword: {3:100, 4:200, 5:400, 6:1000},
+  shield: {3:40, 4:80, 5:150, 6:300},
+  gold: {3:20, 4:40, 5:75, 6:200}
+};
+const TAP_BONUS = {
+  sword: {PERFECT:5, GREAT:2, COOL:1},
+  shield: {PERFECT:5, GREAT:2, COOL:1},
+  gold: {PERFECT:3, GREAT:2, COOL:1}
+};
 
 // ── State ──
 let playerHP=PLAYER_MAX_HP, playerShield=0, gold=0;
@@ -186,6 +208,7 @@ let activeSlots=3;
 let slotSchedule=[], slotScheduleTime=0, slotScheduleIdx=0;
 let slotRevealedIcons=[];
 let slotBeatLines=[], slotBeatFlash=[];
+let slotValues=[];
 let iconDotVertices=[];
 
 let glyphVerts=[], glyphEdges=[], edgeDurs=[];
@@ -197,6 +220,7 @@ let allPerfectSoFar=true, isAllPerfect=false;
 
 let streakCount=0, streakTextTimer=0, streakActive=false;
 let particles=[], floatingAnims=[], slashAnims=[], shieldAnims=[];
+let slashProjectiles=[];
 let shake=0, glow=0, lastTime=0, paused=false;
 
 const bgP=[];
@@ -268,10 +292,22 @@ function startSlotPhase(){
   slotPhase='rolling'; slotRollAnim=0;
   phaseActive=false; showingResults=false;
 
-  // Values start at 0 during roll — set after roll completes
   baseValues={sword:0,shield:0,gold:0};
   tapValues={sword:0,shield:0,gold:0};
   allPerfectSoFar=true; isAllPerfect=false;
+
+  // Pre-calculate per-slot values (progressive match)
+  const allSame=slotIcons.every(ic=>ic===slotIcons[0]);
+  slotValues=[];
+  if(allSame&&MATCH_VALUES[slotIcons[0]][activeSlots]){
+    const total=MATCH_VALUES[slotIcons[0]][activeSlots];
+    const single=SINGLE_BASE[slotIcons[0]];
+    for(let i=0;i<activeSlots;i++)
+      slotValues.push({icon:slotIcons[i],value:i<activeSlots-1?single:total-single*(activeSlots-1)});
+  } else {
+    for(let i=0;i<activeSlots;i++)
+      slotValues.push({icon:slotIcons[i],value:SINGLE_BASE[slotIcons[i]]});
+  }
 
   // Build reveal schedule
   const edges=[1]; let vp=1;
@@ -285,7 +321,6 @@ function startSlotPhase(){
   }
   edges.pop();
 
-  // Map HH intermediate vertices to their slot
   const vertToSlot={};
   let vc=1;
   for(let i=0;i<activeSlots;i++){
@@ -304,10 +339,28 @@ function startSlotPhase(){
   }
   slotScheduleTime=0; slotScheduleIdx=0;
 
-  showLabel('🎰 ROLL','#ffaa00');
+  showLabel('\u{1f3b0} ROLL','#ffaa00');
+}
+
+function applySlotReveal(idx){
+  const sv=slotValues[idx];
+  baseValues[sv.icon]+=sv.value;
+  if(sv.icon==='sword'){
+    enemyHP=Math.max(0,enemyHP-sv.value);
+    shake=Math.min(sv.value/10,4);
+    spawnSlashProjectile(sv.value);
+  } else if(sv.icon==='shield'){
+    playerShield+=sv.value;
+    shieldAnims.push({life:1,x:W()/2,y:H()*.92});
+  } else {
+    gold+=sv.value;
+    spawnCoins(W()/2,H()*.5,'PERFECT');
+  }
+  updateUI();
 }
 
 function updateSlots(dt){
+  ctx.globalAlpha=1;
   if(slotPhase==='idle'||slotPhase==='waiting') return;
   slotRollAnim+=dt*.006;
 
@@ -319,6 +372,7 @@ function updateSlots(dt){
         slotRevealedIcons[ev.slot]=true;
         sfx.slotLand(slotIcons[ev.slot]);
         slotBeatLines[ev.slot]=1; slotBeatFlash[ev.slot]=300;
+        applySlotReveal(ev.slot);
       } else if(ev.action==='init'){ play('slot',1,Math.pow(2,streakCount*2/12));
       } else if(ev.action==='snare'){
         sfx.tick();
@@ -328,19 +382,22 @@ function updateSlots(dt){
     }
     for(let i=0;i<activeSlots;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(slotScheduleIdx>=slotSchedule.length){
-      slotPhase='show-result'; slotTimer=BEAT*800;
+      slotPhase='show-result'; slotTimer=BEAT*1000;
       if(slotIcons.every(ic=>ic===slotIcons[0])) sfx.triple();
     }
   } else if(slotPhase==='show-result'){
     slotTimer-=dt;
     for(let i=0;i<activeSlots;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
-    if(slotTimer<=0) startGlyphPhase();
+    if(slotTimer<=0){
+      if(enemyHP<=0){ setTimeout(()=>advanceEnemy(),1200); slotPhase='idle'; }
+      else startGlyphPhase();
+    }
   }
 }
 
 // ── Glyph Building ──
 function buildRhythmFromSlots(){
-  const edges=[1]; // init edge
+  const edges=[1];
   iconDotVertices=[]; let vp=1;
   for(let i=0;i<activeSlots;i++){
     iconDotVertices.push(vp);
@@ -357,22 +414,21 @@ function buildGlyph(edgeMults, cx, cy){
   const n=edgeMults.length;
   const shapeType=Math.floor(Math.random()*6);
   const baseAngle=Math.PI/3;
-  const gameEdges=n-1; // edges after init
+  const gameEdges=n-1;
   const gameW=edgeMults.slice(1).reduce((a,b)=>a+b,0);
   const maxW=W()-60;
-  const maxVH=H()*0.35; // vertical space available for glyph
-  const baseUnit=140*(3/Math.max(3,activeSlots)); // scale down for more slots
+  const maxVH=H()*0.35;
+  const baseUnit=140*(3/Math.max(3,activeSlots));
   const estH=gameW*Math.cos(baseAngle)*(shapeType===2?.6:1);
   const estV=gameW*Math.sin(baseAngle);
   let unitLen=baseUnit;
   if(estH>0) unitLen=Math.min(unitLen, maxW/estH);
   if(estV>0) unitLen=Math.min(unitLen, maxVH/estV);
 
-  // Compute edge angles — edge 0 is init (vertical down), rest zigzag horizontally
   const angles=[];
   for(let i=0;i<n;i++){
-    if(i===0){ angles.push(Math.PI/2); continue; } // init: straight down
-    const zi=i-1; // zigzag index starts at 0 from first game edge
+    if(i===0){ angles.push(Math.PI/2); continue; }
+    const zi=i-1;
     let a;
     if(shapeType===0) a=(zi%2===0)?baseAngle:-baseAngle;
     else if(shapeType===1) a=(zi%2===0)?-baseAngle:baseAngle;
@@ -393,7 +449,6 @@ function buildGlyph(edgeMults, cx, cy){
     angles.push(a);
   }
 
-  // Place vertices
   const verts=[]; let x=0,y=0; verts.push({x,y});
   for(let i=0;i<n;i++){
     const len=edgeMults[i]*unitLen, a=angles[i];
@@ -401,7 +456,6 @@ function buildGlyph(edgeMults, cx, cy){
     verts.push({x,y});
   }
 
-  // Center
   const xs=verts.map(v=>v.x), ys=verts.map(v=>v.y);
   const ox=cx-(Math.min(...xs)+Math.max(...xs))/2;
   const oy=cy-(Math.min(...ys)+Math.max(...ys))/2;
@@ -413,6 +467,21 @@ function buildGlyph(edgeMults, cx, cy){
     durs.push(edgeMults[i]*BEAT);
   }
   return {verts,edges,durs};
+}
+
+function spawnSlashProjectile(damage){
+  const count=Math.min(10, Math.max(3, Math.floor(damage/15)));
+  const sz=Math.min(8, 2+damage/25);
+  const ex=W()/2, ey=H()*.08;
+  for(let i=0;i<count;i++){
+    slashProjectiles.push({
+      x:ex+(Math.random()-.5)*60,
+      y:H()*.4+(Math.random()-.5)*30,
+      tx:ex+(Math.random()-.5)*25,
+      ty:ey+(Math.random()-.5)*12,
+      life:1, size:sz*(0.6+Math.random()*.8)
+    });
+  }
 }
 
 function startGlyphPhase(){
@@ -428,18 +497,6 @@ function startGlyphPhase(){
   turnResults=[]; phaseActive=true;
   tapValues={sword:0,shield:0,gold:0};
   allPerfectSoFar=true; isAllPerfect=false;
-
-  // Set base values now — indicators jump from 0 to base on init beat
-  baseValues={sword:0,shield:0,gold:0};
-  const allSame=slotIcons.every(ic=>ic===slotIcons[0]);
-  const SINGLE_BASE={sword:20,shield:15,gold:1};
-  if(allSame){
-    const ic=slotIcons[0];
-    baseValues[ic]=Math.round(SINGLE_BASE[ic]*activeSlots*1.5);
-  } else {
-    slotIcons.forEach(ic=>{ baseValues[ic]+=SINGLE_BASE[ic]; });
-  }
-
   play('slot',1,Math.pow(2,streakCount*2/12));
 }
 
@@ -455,18 +512,18 @@ function evalHit(){
     const sinceArrival=BEAT*1000-endPauseTimer;
     const lastV=glyphEdges[glyphEdges.length-1].to;
     if(!intHits[lastV]){
-      if(sinceArrival<55) return {rating:'PERFECT',nearEnd:true,forceIdx:lastV};
-      if(sinceArrival<120) return {rating:'GREAT',nearEnd:true,forceIdx:lastV};
-      if(sinceArrival<200) return {rating:'COOL',nearEnd:true,forceIdx:lastV};
+      if(sinceArrival<110) return {rating:'PERFECT',nearEnd:true,forceIdx:lastV};
+      if(sinceArrival<170) return {rating:'GREAT',nearEnd:true,forceIdx:lastV};
+      if(sinceArrival<230) return {rating:'COOL',nearEnd:true,forceIdx:lastV};
     }
     return {rating:'MISS',nearEnd:true};
   }
   const ms=edgeDurs[dotSeg]*1000;
   const tEnd=(1-dotProg)*ms, tStart=dotProg*ms;
   const near=tEnd<tStart, td=Math.min(tEnd,tStart);
-  if(td<55) return {rating:'PERFECT',nearEnd:near};
-  if(td<120) return {rating:'GREAT',nearEnd:near};
-  if(td<200) return {rating:'COOL',nearEnd:near};
+  if(td<110) return {rating:'PERFECT',nearEnd:near};
+  if(td<170) return {rating:'GREAT',nearEnd:near};
+  if(td<230) return {rating:'COOL',nearEnd:near};
   return {rating:'MISS',nearEnd:near};
 }
 
@@ -500,16 +557,15 @@ function applyTap(vi, rating){
 
   if(ii>=0){
     const icon=slotIcons[ii];
-    const b={sword:{PERFECT:20,GREAT:15,COOL:12},shield:{PERFECT:15,GREAT:12,COOL:11},gold:{PERFECT:5,GREAT:2,COOL:1}};
-    const val=b[icon][rating]; tapValues[icon]+=val;
-    if(rating==='PERFECT') shake=Math.min(val/3,3);
-    if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); slashAnims.push({life:1,x:W()/2,y:H()*.08}); play('sword',vol); }
+    const val=TAP_BONUS[icon][rating]; tapValues[icon]+=val;
+    if(rating==='PERFECT') shake=Math.min(val,3);
+    if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); spawnSlashProjectile(val); play('sword',vol); }
     else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); play('shield',vol); }
     else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin',vol); }
   } else if(vi>0){
     const ab={PERFECT:5,GREAT:2,COOL:1}[rating];
     if(rating==='PERFECT') shake=Math.min(ab/3,2);
-    if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); slashAnims.push({life:1,x:W()/2,y:H()*.08}); }
+    if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); spawnSlashProjectile(ab); }
     if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.92}); }
     if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating); }
     updateUI(); play('snare',vol*0.5);
@@ -605,6 +661,7 @@ function updateEnemyTurn(dt){
 }
 
 function drawEnemyTurn(){
+  ctx.globalAlpha=1;
   if(!enemyTurnActive) return;
   const cx=W()/2, cy=H()/2;
   ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(0,cy-50,W(),100);
@@ -672,7 +729,7 @@ function resetGame(){
   updateTempo();
   slotPhase='idle'; phaseActive=false; showingResults=false;
   paused=false; $('pause-screen').style.display='none'; $('pause-btn').textContent='⏸';
-  particles=[]; shake=0; floatingAnims=[]; slashAnims=[]; shieldAnims=[];
+  particles=[]; shake=0; floatingAnims=[]; slashAnims=[]; shieldAnims=[]; slashProjectiles=[];
   streakCount=0; streakActive=false;
   updateUI(); $('gameover-screen').style.display='none';
   $('result-display').textContent='';
@@ -711,6 +768,7 @@ function drawBG(){
 }
 
 function drawSlots(){
+  ctx.globalAlpha=1;
   if(slotPhase==='idle') return;
   const cx=W()/2, sy=H()*.28, sw=56, sh=64, gap=10;
   const sx=cx-(sw*activeSlots+gap*(activeSlots-1))/2;
@@ -742,10 +800,11 @@ function drawSlots(){
 }
 
 function drawIndicators(){
+  ctx.globalAlpha=1;
   if(slotPhase==='idle') return;
   const cx=W()/2, y=H()*.82;
-  const names=['sword','shield','gold'];
-  const gap=Math.min(activeSlots>3?100:140,W()*.35), sx=cx-gap*(names.length-1)/2;
+  const names=['shield','gold'];
+  const gap=Math.min(140,W()*.35), sx=cx-gap*(names.length-1)/2;
 
   names.forEach((n,i)=>{
     const x=sx+i*gap, bv=baseValues[n], tv=tapValues[n], has=bv>0||tv>0;
@@ -758,6 +817,7 @@ function drawIndicators(){
 }
 
 function drawGlyph(){
+  ctx.globalAlpha=1;
   if(slotPhase!=='playing'||(!phaseActive&&!showingResults)) return;
   const so=getStreakOpacity(); // [glyphA, circleBase, timingLo, timingHi]
   const col='#00ffaa', dim='rgba(0,255,170,0.15)', mid='rgba(0,255,170,0.4)';
@@ -807,34 +867,31 @@ function drawGlyph(){
 
     // Circle opacity: ramp from circleBase to timingHi as dot approaches
     let circleA=so[1]; // base circle opacity
-    if(td<200&&td!==Infinity){
-      // Within timing window: ramp from timingLo (at 200ms) to timingHi (at 0ms)
-      const t=1-td/200; // 0 at 200ms, 1 at 0ms
+    if(td<230&&td!==Infinity){
+      // Within timing window: ramp from timingLo (at 230ms) to timingHi (at 0ms)
+      const t=1-td/230; // 0 at 230ms, 1 at 0ms
       circleA=so[2]+(so[3]-so[2])*t;
     }
     ctx.globalAlpha=Math.min(1,circleA);
 
-    ctx.beginPath();ctx.arc(v.x,v.y,r+4,0,Math.PI*2);
-    ctx.fillStyle=hit?'rgba(255,255,255,0.08)':col+'11';ctx.fill();
+    const rc=vertexRatings[i]==='PERFECT'?'#ffaa00':vertexRatings[i]==='MISS'?'#ff3366':'#00ffaa';
+    ctx.beginPath();ctx.arc(v.x,v.y,r+3,0,Math.PI*2);
+    ctx.fillStyle=hit?rc+'12':col+'11';ctx.fill();
     ctx.beginPath();ctx.arc(v.x,v.y,r,0,Math.PI*2);
-    if(isInit){ ctx.strokeStyle='#ffffff33';ctx.lineWidth=1; }
+    if(isInit){ ctx.strokeStyle='#ffffff22';ctx.lineWidth=1; }
     else{
       const prox=td<=animW?1-td/animW:0;
-      ctx.strokeStyle=hit?'#ffffff44':prox>.5?'#ffffffee':prox>0?'#ffffffbb':col;
-      ctx.lineWidth=hit?1.5:1.5+prox*1.5;
+      ctx.strokeStyle=hit?rc+'55':prox>.5?col+'ee':prox>0?col+'99':col+'44';
+      ctx.lineWidth=hit?1:1+prox*1.5;
     }
     ctx.stroke();
 
     if(isInit){
       ctx.font='10px Orbitron';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillStyle='#00ffaa88';ctx.fillText('PLAY',v.x,v.y);
+      ctx.fillStyle='#00ffaa66';ctx.fillText('PLAY',v.x,v.y);
     } else if(hit){
-      // Outer filled ring
-      ctx.beginPath();ctx.arc(v.x,v.y,r,0,Math.PI*2);
-      ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fill();
-      // Inner filled dot
-      ctx.beginPath();ctx.arc(v.x,v.y,3.5,0,Math.PI*2);
-      ctx.fillStyle='rgba(255,255,255,0.35)';ctx.fill();
+      ctx.beginPath();ctx.arc(v.x,v.y,2.5,0,Math.PI*2);
+      ctx.fillStyle=rc+'77';ctx.fill();
     }
   });
 
@@ -842,15 +899,16 @@ function drawGlyph(){
   if(phaseActive){
     ctx.globalAlpha=so[0];
     const p=getDotPos();
-    ctx.beginPath();ctx.arc(p.x,p.y,16,0,Math.PI*2);
-    ctx.fillStyle='rgba(0,255,170,0.15)';ctx.fill();
-    ctx.beginPath();ctx.arc(p.x,p.y,7.5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
-    ctx.beginPath();ctx.arc(p.x,p.y,4.5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y,12,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,255,170,0.1)';ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);ctx.fillStyle='#ffffffcc';ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
   }
   ctx.globalAlpha=1;
 }
 
 function drawEnemy(){
+  ctx.globalAlpha=1;
   const cx=W()/2,cy=H()*.08,pulse=Math.sin(glow*2)*3,sz=25+pulse,hp=enemyHP/enemyMaxHP;
   ctx.save();ctx.translate(cx,cy);
   ctx.beginPath();ctx.arc(0,0,sz+10,0,Math.PI*2);ctx.fillStyle=`rgba(255,51,102,${.08*hp})`;ctx.fill();
@@ -875,19 +933,28 @@ function updateAnims(dt){
   slashAnims.forEach(a=>{a.life-=dt/300;});
   shieldAnims=shieldAnims.filter(a=>a.life>0);
   shieldAnims.forEach(a=>{a.life-=dt/500;});
+  slashProjectiles=slashProjectiles.filter(p=>p.life>0);
+  slashProjectiles.forEach(p=>{
+    const spd=dt/200;
+    p.x+=(p.tx-p.x)*spd; p.y+=(p.ty-p.y)*spd;
+    p.life-=dt/350;
+  });
   particles=particles.filter(p=>p.life>0);
   particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life-=p.decay;});
 }
 
 function drawAnims(){
+  ctx.globalAlpha=1;
   floatingAnims.forEach(a=>{ctx.globalAlpha=Math.max(0,a.life);drawIcon('gold',a.x,a.y,a.size);ctx.globalAlpha=1;});
-  slashAnims.forEach(a=>{
-    const t=1-a.life,len=25+t*15;
-    ctx.save();ctx.translate(a.x,a.y);ctx.globalAlpha=Math.max(0,a.life);
-    ctx.strokeStyle='#ff4466';ctx.lineWidth=3*a.life;
-    ctx.beginPath();ctx.moveTo(-len,-len*.6);ctx.lineTo(len,len*.6);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(len*.8,-len*.5);ctx.lineTo(-len*.8,len*.5);ctx.stroke();
-    ctx.globalAlpha=1;ctx.restore();
+  // Slash projectiles — red streaks flying toward enemy
+  slashProjectiles.forEach(p=>{
+    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.fillStyle='#ff4466';
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();
+    // Trail
+    ctx.strokeStyle='#ff446688';ctx.lineWidth=p.size*.5;
+    ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+(p.x-p.tx)*.3,p.y+(p.y-p.ty)*.3);ctx.stroke();
+    ctx.globalAlpha=1;
   });
   shieldAnims.forEach(a=>{
     const sy=a.y-(1-a.life)*30;
@@ -903,7 +970,7 @@ function drawAnims(){
 // ── Main Loop ──
 function update(ts){
   const dt=ts-lastTime; lastTime=ts; glow+=dt*.001;
-
+  try{
   if(!paused){
     updateSlots(dt);
 
@@ -923,7 +990,7 @@ function update(ts){
       if(dotSeg<glyphEdges.length){
         const fromV=glyphEdges[dotSeg].from;
         const msSinceCross=dotProg*edgeDurs[dotSeg]*1000;
-        if(fromV>0&&!intHits[fromV]&&msSinceCross>200){
+        if(fromV>0&&!intHits[fromV]&&msSinceCross>230){
           intHits[fromV]=true; vertexRatings[fromV]='MISS';
           turnResults.push('MISS'); allPerfectSoFar=false;
           const ii=iconDotVertices.indexOf(fromV);
@@ -936,7 +1003,7 @@ function update(ts){
       endPauseTimer-=dt;
       // Grace period for last vertex
       const lastV=glyphEdges[glyphEdges.length-1].to;
-      if(!intHits[lastV]&&endPauseTimer<(BEAT*1000-200)){
+      if(!intHits[lastV]&&endPauseTimer<(BEAT*1000-230)){
         intHits[lastV]=true; vertexRatings[lastV]='MISS';
         turnResults.push('MISS'); allPerfectSoFar=false;
         const ii=iconDotVertices.indexOf(lastV);
@@ -956,6 +1023,7 @@ function update(ts){
   drawBG(); drawEnemy(); drawSlots(); drawIndicators(); drawGlyph();
   ctx.restore();
   drawAnims(); drawEnemyTurn();
+  }catch(e){ console.error('ERR',e); }
   requestAnimationFrame(update);
 }
 requestAnimationFrame(update);
