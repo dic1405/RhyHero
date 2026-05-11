@@ -225,9 +225,8 @@ let currentBPM = BASE_BPM;
 let BEAT = 60/BASE_BPM;
 let slotCount = 3;
 function updateTempo(){
-  if(enemyNum<=4){ currentBPM=70+(enemyNum-1)*8; slotCount=3; }
-  else if(enemyNum<=7){ currentBPM=80+(enemyNum-5)*5; slotCount=4; }
-  else if(enemyNum<=10){ currentBPM=80+(enemyNum-5)*5; slotCount=5; }
+  if(enemyNum<=7){ currentBPM=enemyNum<=4?70+(enemyNum-1)*8:80+(enemyNum-5)*5; slotCount=3; }
+  else if(enemyNum<=14){ currentBPM=enemyNum<=10?80+(enemyNum-5)*5:110+(enemyNum-11)*3; slotCount=4; }
   else { currentBPM=110+(enemyNum-11)*3; slotCount=5; }
   BEAT=60/currentBPM;
 }
@@ -262,7 +261,9 @@ let passiveSlots=[{id:'sword',icon:'⚔',name:'Sword',cost:0},{id:'shield',icon:
 let usableSlots=[null,null,null]; // max 3, [{id,icon,name}] or null
 let bowUnlocked=false;
 let bowCharge=0, bowMaxCharge=300, bowShotDmg=0, bowShooting=false;
-let bowMatchBonus=[];
+let bowFShotCount=0;
+const BOW_F_MATCH=[0,0,20,30,60,200]; // bonus dmg for 3rd,4th,5th,6th F bow
+
 let rerollCount=0;
 let shopItems=[];
 let shopSold=[];
@@ -605,12 +606,9 @@ function startSlotPhase(){
   }
 
   // Bow match bonuses
-  bowMatchBonus=new Array(activeSlots).fill(0);
-  bowCharge=0; bowShotDmg=0; bowShooting=false;
-  if(allSame&&slotIcons[0]==='bow'){
-    const bonuses=[0,0,30,30,40,50]; // idx 2=+30, 3=+30, 4=+40, 5=+50
-    for(let i=2;i<activeSlots&&i<bonuses.length;i++) bowMatchBonus[i]=bonuses[i];
-  }
+  bowFShotCount=0;
+  // bowCharge persists across rolls — only resets when H/HH appears after shooting
+
 
   // Build reveal schedule
   const edges=[1]; let vp=1;
@@ -653,18 +651,18 @@ function applySlotReveal(idx){
   if(ic==='bow'){
     // Bow: H/HH = charge, F = shoot
     if(bt==='H'||bt==='HH'){
-      // Half beat: charge
-      const chg=getBowChargePerHalf()+bowMatchBonus[idx];
-      bowCharge+=chg; bowShooting=false;
+      // Half beat: charge. If was shooting, reset charge first
+      if(bowShooting){ bowCharge=0; }
+      bowShooting=false;
+      const chg=getBowChargePerHalf();
+      bowCharge+=chg;
       if(bowCharge>getBowMaxCharge()){ bowCharge=0; } // overflow reset
       baseValues.bow+=chg;
     } else if(bt==='F'){
-      // Full beat: shoot
-      if(!bowShooting){
-        bowShotDmg=bowCharge+10;
-        bowShooting=true;
-      }
-      const dmg=bowShotDmg;
+      // Full beat: shoot charge + F match bonus, reset charge
+      const fBonus=bowFShotCount<BOW_F_MATCH.length?BOW_F_MATCH[bowFShotCount]:200;
+      const dmg=bowCharge+10+fBonus;
+      bowCharge=0; bowFShotCount++;
       enemyHP=Math.max(0,enemyHP-dmg);
       shake=Math.min(dmg/10,5);
       spawnSlashProjectile(dmg);
@@ -710,13 +708,13 @@ function updateSlots(dt){
       } else if(ev.action==='init'){ play('slot',1,Math.pow(2,streakCount*2/12));
       } else if(ev.action==='snare'){
         const sic=ev.slot>=0?slotIcons[ev.slot]:null;
+        sfx.tick(); // always snare sound, even for bow
         if(sic==='bow'){
-          play('bow_charge');
           const chg=getBowChargePerHalf();
-          bowCharge+=chg; bowShooting=false;
+          bowCharge+=chg;
           if(bowCharge>getBowMaxCharge()) bowCharge=0;
           baseValues.bow+=chg;
-        } else sfx.tick();
+        }
         if(ev.slot>=0){ slotBeatLines[ev.slot]=2; slotBeatFlash[ev.slot]=300; }
       }
       slotScheduleIdx++;
@@ -754,14 +752,15 @@ function buildRhythmFromSlots(){
 function buildGlyph(edgeMults, cx, cy){
   const n=edgeMults.length;
   const shapeType=Math.floor(Math.random()*6);
-  const baseAngle=Math.PI/3;
+  // Adaptive angle: flatter when many edges to spread horizontally
+  const baseAngle=n>5?Math.PI/4:Math.PI/3;
   const gameEdges=n-1;
   const gameW=edgeMults.slice(1).reduce((a,b)=>a+b,0);
-  const maxW=W()-60;
-  const maxVH=H()*0.22;
-  const baseUnit=140*(3/Math.max(3,activeSlots));
+  const maxW=W()-50;
+  const maxVH=H()*0.38;
+  const baseUnit=280*(3/Math.max(3,activeSlots));
   const estH=gameW*Math.cos(baseAngle)*(shapeType===2?.6:1);
-  const estV=gameW*Math.sin(baseAngle);
+  const estV=gameW*Math.sin(baseAngle)+1;
   let unitLen=baseUnit;
   if(estH>0) unitLen=Math.min(unitLen, maxW/estH);
   if(estV>0) unitLen=Math.min(unitLen, maxVH/estV);
@@ -1058,7 +1057,7 @@ function drawEnemyTurn(){
 
 // ── Progression ──
 function advanceEnemy(){
-  gold+=20; // defeat bonus
+  gold+=20; bowCharge=0; bowShotDmg=0; bowShooting=false; bowFShotCount=0; // defeat bonus + bow reset
   enemyNum++;
   // HP: +10/lvl (1-4), +20/lvl (5-10), +50/lvl (11+)
   if(enemyNum<=4) enemyMaxHP=150+(enemyNum-1)*10;
@@ -1328,7 +1327,7 @@ function drawAnims(){
   slashProjectiles.forEach(p=>{
     ctx.globalAlpha=Math.max(0,p.life);
     ctx.fillStyle='#ff4466';
-    ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y,Math.max(0,p.size*p.life),0,Math.PI*2);ctx.fill();
     // Trail
     ctx.strokeStyle='#ff446688';ctx.lineWidth=p.size*.5;
     ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+(p.x-p.tx)*.3,p.y+(p.y-p.ty)*.3);ctx.stroke();
