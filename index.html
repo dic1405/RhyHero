@@ -993,7 +993,7 @@ function updateSlots(dt){
       } else if(ev.action==='muteSnare'){
         play('mutebeat',0.6);
         if(ev.slot>=0){ slotBeatLines[ev.slot]=2; slotBeatFlash[ev.slot]=300; }
-      } else if(ev.action==='init'){ play('slot',1,Math.pow(2,Math.floor(streakCount/2)/12));
+      } else if(ev.action==='init'){ play('slot',0.5,Math.pow(2,Math.floor(streakCount/2)/12));
       } else if(ev.action==='snare'){
         const sic=ev.slot>=0?slotIcons[ev.slot]:null;
         sfx.tick(); // always snare sound, even for bow
@@ -1137,7 +1137,7 @@ function startGlyphPhase(){
   turnResults=[]; phaseActive=true;
   tapValues={sword:0,shield:0,gold:0,bow:0};
   allPerfectSoFar=true; isAllPerfect=false;
-  play('slot',1,Math.pow(2,Math.floor(streakCount/2)/12));
+  play('slot',0.5,Math.pow(2,Math.floor(streakCount/2)/12));
 }
 
 // ── Hit Detection ──
