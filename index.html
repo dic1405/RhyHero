@@ -1261,6 +1261,9 @@ function resetGame(){
   paused=false; $('pause-screen').style.display='none'; $('pause-btn').textContent='⏸';
   particles=[]; shake=0; floatingAnims=[]; shieldAnims=[]; slashProjectiles=[];
   streakCount=0; streakActive=false; perfectStreakCount=0; perfectStreakMultiplier=1.0;
+  tutorialActive=false; tutorialPaused=false; tutorialStep=0; tutorialDone=false;
+  streak3TutorialActive=false;
+  $('tutorial-text').style.display='none';
   updateUI(); $('gameover-screen').style.display='none';
   $('result-display').textContent='';
   $('e-label').textContent='ENEMY 1'; $('e-atk').textContent=`ATK: ${BASE_ENEMY_DMG}`;
