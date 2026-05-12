@@ -1628,7 +1628,7 @@ function togglePause(){
 
 addEventListener('keydown',e=>{
   if(e.code==='Escape'){e.preventDefault();togglePause();return;}
-  if(!paused&&e.code==='Space'){e.preventDefault();handleHit();}
+  if(!paused&&e.code==='Space'){e.preventDefault();if(rbActive){handleRBTap();}else{handleHit();}}
 });
 gameWrap.addEventListener('pointerdown',e=>{
   if(e.target.id==='pause-btn') return;
@@ -1650,7 +1650,10 @@ gameWrap.addEventListener('pointerdown',e=>{
     startSlotPhase();
     return;
   }
-  if(!paused) handleHit();
+  if(!paused){
+    if(rbActive){ handleRBTap(); return; }
+    handleHit();
+  }
 });
 $('pause-btn').addEventListener('click',togglePause);
 $('resume-btn').addEventListener('click',togglePause);
@@ -2064,7 +2067,8 @@ function update(ts){
 
   ctx.save();
   if(shake>0) ctx.translate((Math.random()-.5)*shake*2,(Math.random()-.5)*shake*2);
-  drawBG(); drawEnemy(); drawSlots(); drawIndicators(); drawGlyph();
+  drawBG(); drawEnemy();
+  if(rbActive){ drawRB(); } else { drawSlots(); drawIndicators(); drawGlyph(); }
   ctx.restore();
   drawAnims(); drawEnemyTurn();
   }catch(e){ console.error('ERR',e); }
