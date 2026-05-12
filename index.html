@@ -70,6 +70,12 @@ canvas{display:block;width:100%;height:100%}
 .sold-txt{color:#555;font:20px 'ByteBounce'}
 .shop-card.sold .cost{color:#555}
 #reroll-btn{font:20px 'ByteBounce';padding:6px 16px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;align-self:center}
+.shop-bars{width:100%;display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.shop-bar-row{display:flex;align-items:center;gap:8px}
+.shop-bar-label{font:16px 'ByteBounce';width:60px;text-align:right}
+.shop-bar-wrap{flex:1;height:10px;border:1px solid;border-radius:2px;overflow:hidden;background:rgba(0,0,0,.4)}
+.shop-bar-fill{height:100%;border-radius:1px;transition:width .3s}
+.shop-bar-val{font:14px 'ByteBounce';width:70px}
 .shop-inv{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:12px 14px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;margin-top:4px}
 .inv-section{width:100%;margin:0}
 .inv-label{font:18px 'ByteBounce';color:#aaa;margin-bottom:4px;text-align:left}
@@ -93,8 +99,8 @@ canvas{display:block;width:100%;height:100%}
   <div id="enemy-section">
     <div id="e-label">ENEMY 1</div>
     <div id="e-hp-wrap" class="bar-wrap"><div id="e-hp-fill" class="bar-fill"></div></div>
-    <div id="e-hp-txt">200/200</div>
-    <div id="e-atk">ATK: 35</div>
+    <div id="e-hp-txt">250/250</div>
+    <div id="e-atk">ATK: 25</div>
   </div>
   <div id="player-section">
     <div id="p-row">
@@ -144,6 +150,18 @@ canvas{display:block;width:100%;height:100%}
       <button id="reroll-btn" onclick="rerollShop()">🎲 Reroll (10g)</button>
     </div>
     <div class="shop-inv">
+      <div class="shop-bars">
+        <div class="shop-bar-row">
+          <span class="shop-bar-label" style="color:#00ffaa">HP</span>
+          <div class="shop-bar-wrap" style="border-color:#00ffaa44"><div id="shop-hp-fill" class="shop-bar-fill" style="background:#00ffaa;width:100%"></div></div>
+          <span class="shop-bar-val" style="color:#00ffaa" id="shop-hp-txt">100/100</span>
+        </div>
+        <div class="shop-bar-row">
+          <span class="shop-bar-label" style="color:#4488ff">Shield</span>
+          <div class="shop-bar-wrap" style="border-color:#4488ff44"><div id="shop-shield-fill" class="shop-bar-fill" style="background:#4488ff;width:0%"></div></div>
+          <span class="shop-bar-val" style="color:#4488ff" id="shop-shield-txt">0/100</span>
+        </div>
+      </div>
       <div class="inv-section">
         <div class="inv-label">SLOT INVENTORY</div>
         <div class="inv-slots" id="inv-passives"></div>
@@ -264,7 +282,7 @@ const TEMPO_BLOCKS = [
 ];
 function isBoss(lvl){ return lvl%5===0; }
 function getTempo(lvl){
-  if(lvl===1) return 70; // tutorial fixed tempo
+  if(lvl===1) return 65; // tutorial fixed tempo
   if(lvl>40) return 200;
   const block=Math.floor((lvl-1)/5), pos=(lvl-1)%5;
   if(block>=TEMPO_BLOCKS.length) return 200;
@@ -276,6 +294,7 @@ function getTempo(lvl){
   return base+inc*pos;
 }
 function getEnemyHP(lvl){
+  if(lvl===1) return 250;
   let hp=200, lastNonBoss=200;
   for(let i=2;i<=lvl;i++){
     if(isBoss(i)){
@@ -405,7 +424,7 @@ function buyItem(idx){
 function generateShopItems(){
   const pool=SHOP_POOL.filter(it=>{
     if(it.requires==='bow'&&!bowUnlocked) return false;
-    if(it.id==='bow'&&bowUnlocked) return false;
+    if(it.id==='bow'&&(bowUnlocked||enemyNum<4)) return false;
     if(it.requires==='hp200'&&PLAYER_MAX_HP<=200) return false;
     if(it.id==='upgrade_usable'&&maxUsableSlots>=5) return false;
     return true;
@@ -431,6 +450,10 @@ function rerollShop(){
 
 function renderShop(){
   $('shop-gold-display').textContent='💰 '+gold;
+  $('shop-hp-fill').style.width=(playerHP/PLAYER_MAX_HP*100)+'%';
+  $('shop-hp-txt').textContent=playerHP+'/'+PLAYER_MAX_HP;
+  $('shop-shield-fill').style.width=(playerShield/PLAYER_MAX_SHIELD*100)+'%';
+  $('shop-shield-txt').textContent=playerShield+'/'+PLAYER_MAX_SHIELD;
   const grid=$('shop-grid'); grid.innerHTML='';
   shopItems.forEach((item,i)=>{
     const cost=getItemCost(item);
@@ -593,8 +616,8 @@ function getShieldTap(rating){ return (TAP_BONUS.shield[rating]||0)+upgradeCount
 
 // ── State ──
 let playerHP=PLAYER_MAX_HP, playerShield=0, gold=0;
-let enemyMaxHP=BASE_ENEMY_HP, enemyHP=BASE_ENEMY_HP, enemyNum=1;
-let currentEnemyDmg=BASE_ENEMY_DMG;
+let enemyMaxHP=250, enemyHP=250, enemyNum=1;
+let currentEnemyDmg=25;
 
 let slotIcons=[], slotBeats=[];
 let slotPhase='idle', slotTimer=0, slotRollAnim=0;
@@ -615,6 +638,7 @@ let allPerfectSoFar=true, isAllPerfect=false;
 let streakCount=0, streakTextTimer=0, streakActive=false;
 let perfectStreakCount=0, perfectStreakMultiplier=1.0;
 let tutorialActive=false, tutorialPaused=false, tutorialStep=0, tutorialDone=false;
+let tutorialRollCount=0;
 let streak3TutorialDone=false, streak3TutorialActive=false;
 let particles=[], floatingAnims=[], shieldAnims=[];
 let slashProjectiles=[];
@@ -635,7 +659,7 @@ addEventListener('resize',resize); resize();
 const W=()=>gameWrap.clientWidth, H=()=>gameWrap.clientHeight;
 
 // ── Helpers ──
-const rollIcon=()=>{ const pool=bowUnlocked?['sword','shield','gold','bow']:ICONS; return pool[Math.floor(Math.random()*pool.length)]; };
+const rollIcon=()=>{ const pool=(bowUnlocked&&enemyNum>=4)?['sword','shield','gold','bow']:ICONS; return pool[Math.floor(Math.random()*pool.length)]; };
 function rollBeat(){ const r=Math.random(); return r<.4?'F':r<.75?'HH':'H'; }
 const $=id=>document.getElementById(id);
 
@@ -692,33 +716,19 @@ function startSlotPhase(){
     if(ic==='bow'){ const r=Math.random(); return r<0.25?'F':r<0.75?'HH':'H'; }
     return rollBeat();
   });
-  // Level 1: fixed clean patterns (no overlapping lines)
+  // Level 1: forced tutorial patterns
   if(enemyNum===1){
-    const swordCount=slotIcons.filter(ic=>ic==='sword').length;
-    if(swordCount>=3){
-      // All swords: F,F,F — clean
-    } else if(swordCount===2){
-      // 2F + 1HH
-      for(let i=0;i<activeSlots;i++) if(slotIcons[i]!=='sword'){ slotBeats[i]='HH'; break; }
-    } else {
-      // Pick pattern: 2F+1HH or 1F+2H
-      const pattern=Math.random()<0.5?'A':'B';
-      const nonSwords=[];
-      for(let i=0;i<activeSlots;i++) if(slotIcons[i]!=='sword') nonSwords.push(i);
-      if(pattern==='A'){
-        // 2F + 1HH: non-swords get F and HH to reach total 2F+1HH
-        const needF=2-swordCount;
-        for(let j=0;j<nonSwords.length;j++){
-          slotBeats[nonSwords[j]]=j<needF?'F':'HH';
-        }
-      } else {
-        // 1F + 2H: non-swords get F and H to reach total 1F+2H
-        const needF=1-swordCount;
-        for(let j=0;j<nonSwords.length;j++){
-          slotBeats[nonSwords[j]]=j<Math.max(0,needF)?'F':'H';
-        }
-      }
-    }
+    const patterns=[
+      {icons:['sword','sword','shield'], beats:['F','F','F']},
+      {icons:['sword','gold','gold'],    beats:['F','F','HH']},
+      {icons:['shield','gold','sword'],  beats:['F','F','F']},
+      {icons:['shield','gold','gold'],   beats:['F','HH','F']},
+      {icons:['gold','gold','sword'],    beats:['HH','HH','F']},
+      {icons:['sword','sword','sword'],  beats:['F','F','F']},
+    ];
+    const p=patterns[tutorialRollCount%patterns.length];
+    slotIcons=p.icons.slice(); slotBeats=p.beats.slice();
+    tutorialRollCount++;
   }
   slotRevealedIcons=new Array(activeSlots).fill(false);
   slotPhase='rolling'; slotRollAnim=0;
@@ -1115,16 +1125,7 @@ function getStreakSlotCount(){
 
 function finishPlaying(){
   powerPotionActive=false;
-  if(tutorialActive&&tutorialStep===0){
-    // Force streak for tutorial
-    tutorialStep=1; tutorialPaused=true;
-    streakCount++; streakActive=true; streakTextTimer=BEAT*1000;
-    sfx.streak(streakCount);
-    $('tutorial-text').style.display='block';
-    $('tutorial-text').textContent='Tap all dots to roll again and skip the enemy\'s attack! Tap to continue.';
-    $('hit-fb').style.opacity=0;
-    return;
-  }
+
   phaseActive=false; showingResults=true;
   const tappable=totalInts-1;
   if(turnResults.filter(r=>r!=='MISS').length<tappable) allPerfectSoFar=false;
@@ -1157,6 +1158,10 @@ function finishPlaying(){
       fb.style.textShadow='none';
     }
     fb.style.opacity=1; fb.style.transform='translate(-50%,-50%) scale(1.3)';
+    // Tutorial: mark pending, will show after streak text fades
+    if(tutorialActive&&tutorialStep===0){
+      tutorialStep=1;
+    }
   } else {
     streakCount=0; streakActive=false; perfectStreakCount=0; perfectStreakMultiplier=1.0;
     setTimeout(()=>{ showingResults=false; $('result-display').textContent=''; enemyTurn(); },800);
@@ -1165,9 +1170,19 @@ function finishPlaying(){
 
 function updateStreak(dt){
   if(!streakActive) return;
-  if(tutorialPaused||streak3TutorialActive) return; // Don't auto-roll during tutorial pause
+  if(tutorialPaused||streak3TutorialActive) return;
   streakTextTimer-=dt;
-  if(streakTextTimer<=0){ streakActive=false; showingResults=false; $('hit-fb').style.opacity=0; startSlotPhase(); }
+  if(streakTextTimer<=0){
+    streakActive=false; showingResults=false; $('hit-fb').style.opacity=0;
+    // Tutorial step 1: show text after streak fades, pause for tap
+    if(tutorialActive&&tutorialStep===1){
+      tutorialPaused=true;
+      $('tutorial-text').style.display='block';
+      $('tutorial-text').textContent='Tap all dots to roll again and skip the enemy\'s attack! Tap to continue.';
+      return;
+    }
+    startSlotPhase();
+  }
 }
 
 // ── Enemy Turn ──
@@ -1244,7 +1259,7 @@ function advanceEnemy(){
   enemyNum++;
   enemyMaxHP=getEnemyHP(enemyNum); enemyHP=enemyMaxHP;
   // ATK: +5/lvl (1-4), +10/lvl (5-10), +20/lvl (11+)
-  currentEnemyDmg=35+(enemyNum-1)*3;
+  currentEnemyDmg=enemyNum===1?25:35+(enemyNum-1)*3;
   playerHP=PLAYER_MAX_HP; playerShield=0;
   streakCount=0; streakActive=false; perfectStreakCount=0; perfectStreakMultiplier=1.0;
   updateTempo(); updateUI();
@@ -1269,19 +1284,19 @@ function resetGame(){
   maxUsableSlots=3; usableSlots=[null,null,null]; powerPotionActive=false; bowUnlocked=false; rerollCount=0;
   bowCharge=0; bowShotDmg=0; bowShooting=false; bowFShotCount=0;
   updateUsableBar();
-  enemyNum=1; enemyMaxHP=BASE_ENEMY_HP; enemyHP=BASE_ENEMY_HP;
-  currentEnemyDmg=BASE_ENEMY_DMG;
+  enemyNum=1; enemyMaxHP=250; enemyHP=250;
+  currentEnemyDmg=25;
   updateTempo();
   slotPhase='idle'; phaseActive=false; showingResults=false;
   paused=false; $('pause-screen').style.display='none'; $('pause-btn').textContent='⏸';
   particles=[]; shake=0; floatingAnims=[]; shieldAnims=[]; slashProjectiles=[];
   streakCount=0; streakActive=false; perfectStreakCount=0; perfectStreakMultiplier=1.0;
-  tutorialActive=false; tutorialPaused=false; tutorialStep=0; tutorialDone=false;
+  tutorialActive=false; tutorialPaused=false; tutorialStep=0; tutorialDone=false; tutorialRollCount=0;
   streak3TutorialActive=false;
   $('tutorial-text').style.display='none';
   updateUI(); $('gameover-screen').style.display='none';
   $('result-display').textContent='';
-  $('e-label').textContent='ENEMY 1'; $('e-atk').textContent=`ATK: ${BASE_ENEMY_DMG}`;
+  $('e-label').textContent='ENEMY 1'; $('e-atk').textContent='ATK: 25';
   showRollButton();
 }
 
