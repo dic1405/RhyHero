@@ -615,8 +615,8 @@ function updateUsableBar(){
 // Upgrade getters
 function getSwordBase(){ return Math.floor(SINGLE_BASE.sword*(1+upgradeCounts.sword*0.1)); }
 function getBowBase(){ return Math.floor(SINGLE_BASE.bow*(1+upgradeCounts.bow*0.1)); }
-function getBowMaxCharge(){ return Math.floor(300*(1+upgradeCounts.bow*0.1)); }
-function getBowChargePerHalf(){ return Math.floor(15*(1+upgradeCounts.bow*0.1)); }
+function getBowMaxCharge(){ return Math.floor(300*(1+upgradeCounts.bow*0.05)); }
+function getBowChargePerHalf(){ return Math.floor(15*(1+upgradeCounts.bow*0.05)); }
 function getBowTap(rating){ return (TAP_BONUS.bow[rating]||0)+upgradeCounts.bow*2; }
 function getShieldBase(){ return Math.floor(SINGLE_BASE.shield*(1+upgradeCounts.shield*0.1)); }
 function getSwordTap(rating){ return (TAP_BONUS.sword[rating]||0)+upgradeCounts.sword*2; }
@@ -949,7 +949,7 @@ function applySlotReveal(idx){
   }
 
   let val=sv.value;
-  if(ic==='sword') val=Math.floor(val*(1+upgradeCounts.sword*0.1)*perfectStreakMultiplier);
+  if(ic==='sword') val=Math.floor(val*(1+upgradeCounts.sword*0.05)*perfectStreakMultiplier);
   else if(ic==='shield') val=Math.floor(val*(1+upgradeCounts.shield*0.1)*perfectStreakMultiplier);
   baseValues[ic]+=val;
   if(ic==='sword'){
