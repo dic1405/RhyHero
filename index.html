@@ -282,7 +282,7 @@ const TEMPO_BLOCKS = [
 ];
 function isBoss(lvl){ return lvl%5===0; }
 function getTempo(lvl){
-  if(lvl===1) return 65; // tutorial fixed tempo
+  if(lvl===1) return 70; // tutorial fixed tempo
   if(lvl>40) return 200;
   const block=Math.floor((lvl-1)/5), pos=(lvl-1)%5;
   if(block>=TEMPO_BLOCKS.length) return 200;
@@ -663,7 +663,7 @@ function startBGM2(){
   bgm2Source.buffer=audioBuffers.bgm_loop2;
   bgm2Source.loop=true;
   bgm2Source.playbackRate.value=currentBPM/BGM_BASE_BPM;
-  bgm2Gain.gain.value=0.15;
+  bgm2Gain.gain.value=0.075;
   bgm2Source.connect(bgm2Gain);
   bgm2Gain.connect(ac.destination);
   bgm2Source.start();
@@ -689,8 +689,8 @@ function updateBGMVolume(){
   else if(streakCount>=4) bgmGain.gain.value=0.3;
   else if(streakCount>=3) bgmGain.gain.value=0.1;
   if(bgm2Gain&&bgm2Playing){
-    if(streakCount>=7) bgm2Gain.gain.value=0.25;
-    else bgm2Gain.gain.value=0.15;
+    if(streakCount>=7) bgm2Gain.gain.value=0.125;
+    else bgm2Gain.gain.value=0.075;
   }
 }
 
@@ -1174,11 +1174,12 @@ function spawnParticles(x,y,rating){
 // Opacity table: [glyphAlpha, circleBase, timingLo, timingHi]
 const STREAK_OPACITY = [
   [1.00, 1.00, 1.00, 1.00], // streak 0
-  [0.50, 0.60, 0.70, 0.80], // streak 1
-  [0.10, 0.15, 0.20, 0.30], // streak 2
-  [0.00, 0.05, 0.10, 0.15], // streak 3
-  [0.00, 0.05, 0.10, 0.15], // streak 4 — +1 slot
-  [0.00, 0.05, 0.10, 0.15], // streak 5+
+  [0.50, 0.80, 0.70, 0.80], // streak 1 (circle +20%)
+  [0.10, 0.35, 0.20, 0.30], // streak 2 (circle +20%)
+  [0.00, 0.25, 0.10, 0.15], // streak 3 (circle +20%)
+  [0.00, 0.25, 0.10, 0.15], // streak 4
+  [0.00, 0.25, 0.10, 0.15], // streak 5
+  [0.00, 0.20, 0.10, 0.15], // streak 6+ (cap 20%)
 ];
 function getStreakOpacity(){
   const i=Math.min(streakCount, STREAK_OPACITY.length-1);
@@ -1451,7 +1452,7 @@ $('resume-btn').addEventListener('click',togglePause);
   }
 })();
 
-$('start-btn').addEventListener('click',()=>{$('start-screen').style.display='none';showRollButton()});
+$('start-btn').addEventListener('click',()=>{$('start-screen').style.display='none';updateTempo();showRollButton()});
 $('restart-btn').addEventListener('click',resetGame);
 $('roll-btn').addEventListener('click',()=>{ensureAC();startSlotPhase()});
 
