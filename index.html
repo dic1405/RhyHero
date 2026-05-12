@@ -201,7 +201,7 @@ function tone(f,d,v=.12,t='sine'){
   ensureAC();
   const o=ac.createOscillator(), g=ac.createGain();
   o.type=t; o.frequency.value=f*Math.pow(2,perfectStreakCount*2/12);
-  g.gain.setValueAtTime(v, ac.currentTime);
+  g.gain.setValueAtTime(v*getSfxVolMultiplier(), ac.currentTime);
   g.gain.exponentialRampToValueAtTime(.001, ac.currentTime+d);
   o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+d);
 }
@@ -218,7 +218,7 @@ function play(name, vol=1, pitch=1){
   ensureAC();
   const b = audioBuffers[name]; if(!b) return;
   const s=ac.createBufferSource(), g=ac.createGain();
-  s.buffer=b; g.gain.value=vol; s.playbackRate.value=pitch*Math.pow(2,perfectStreakCount*2/12);
+  s.buffer=b; g.gain.value=vol*getSfxVolMultiplier(); s.playbackRate.value=pitch*Math.pow(2,perfectStreakCount*2/12);
   s.connect(g); g.connect(ac.destination); s.start(0);
 }
 
@@ -313,6 +313,7 @@ function updateTempo(){
   else if(enemyNum<=14) slotCount=4;
   else slotCount=5;
   BEAT=60/currentBPM;
+  updateBGMTempo();
 }
 let PLAYER_MAX_HP = 100;
 let PLAYER_MAX_SHIELD = 100;
@@ -637,6 +638,70 @@ let allPerfectSoFar=true, isAllPerfect=false;
 
 let streakCount=0, streakTextTimer=0, streakActive=false;
 let perfectStreakCount=0, perfectStreakMultiplier=1.0;
+let bgmSource=null, bgmGain=null, bgmPlaying=false, bgmPending=false;
+let bgm2Source=null, bgm2Gain=null, bgm2Playing=false, bgm2Pending=false;
+const BGM_BASE_BPM=90;
+
+function startBGM(){
+  if(bgmPlaying||!ac||!audioBuffers.bgm_loop) return;
+  bgmSource=ac.createBufferSource();
+  bgmGain=ac.createGain();
+  bgmSource.buffer=audioBuffers.bgm_loop;
+  bgmSource.loop=true;
+  bgmSource.playbackRate.value=currentBPM/BGM_BASE_BPM;
+  bgmGain.gain.value=0.1;
+  bgmSource.connect(bgmGain);
+  bgmGain.connect(ac.destination);
+  bgmSource.start();
+  bgmPlaying=true;
+}
+
+function startBGM2(){
+  if(bgm2Playing||!ac||!audioBuffers.bgm_loop2) return;
+  bgm2Source=ac.createBufferSource();
+  bgm2Gain=ac.createGain();
+  bgm2Source.buffer=audioBuffers.bgm_loop2;
+  bgm2Source.loop=true;
+  bgm2Source.playbackRate.value=currentBPM/BGM_BASE_BPM;
+  bgm2Gain.gain.value=0.15;
+  bgm2Source.connect(bgm2Gain);
+  bgm2Gain.connect(ac.destination);
+  bgm2Source.start();
+  bgm2Playing=true;
+}
+
+function stopBGM2(){
+  if(!bgm2Playing||!bgm2Source) return;
+  try{bgm2Source.stop();}catch(e){}
+  bgm2Playing=false; bgm2Source=null; bgm2Gain=null;
+}
+
+function stopBGM(){
+  if(!bgmPlaying||!bgmSource) return;
+  try{bgmSource.stop();}catch(e){}
+  bgmPlaying=false; bgmSource=null; bgmGain=null;
+  stopBGM2();
+}
+
+function updateBGMVolume(){
+  if(!bgmGain||!bgmPlaying) return;
+  if(streakCount>=7) bgmGain.gain.value=0.5;
+  else if(streakCount>=4) bgmGain.gain.value=0.3;
+  else if(streakCount>=3) bgmGain.gain.value=0.1;
+  if(bgm2Gain&&bgm2Playing){
+    if(streakCount>=7) bgm2Gain.gain.value=0.25;
+    else bgm2Gain.gain.value=0.15;
+  }
+}
+
+function updateBGMTempo(){
+  if(bgmSource&&bgmPlaying) bgmSource.playbackRate.value=currentBPM/BGM_BASE_BPM;
+  if(bgm2Source&&bgm2Playing) bgm2Source.playbackRate.value=currentBPM/BGM_BASE_BPM;
+}
+
+function getSfxVolMultiplier(){
+  return (bgmPlaying&&streakCount>=7)?1.5:1.0;
+}
 let tutorialActive=false, tutorialPaused=false, tutorialStep=0, tutorialDone=false;
 let tutorialRollCount=0;
 let streak3TutorialDone=false, streak3TutorialActive=false;
@@ -874,7 +939,7 @@ function updateSlots(dt){
     slotTimer-=dt;
     for(let i=0;i<activeSlots;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(slotTimer<=0){
-      if(enemyHP<=0){ setTimeout(()=>advanceEnemy(),1200); slotPhase='idle'; }
+      if(enemyHP<=0){ stopBGM(); setTimeout(()=>advanceEnemy(),1200); slotPhase='idle'; }
       else startGlyphPhase();
     }
   }
@@ -1120,7 +1185,7 @@ function getStreakOpacity(){
   return STREAK_OPACITY[i];
 }
 function getStreakSlotCount(){
-  return (streakCount>=4?1:0); // +1 slot at streak 4+
+  return (streakCount>=4&&enemyNum>1?1:0); // +1 slot at streak 4+, not during tutorial
 }
 
 function finishPlaying(){
@@ -1132,11 +1197,15 @@ function finishPlaying(){
   isAllPerfect=allPerfectSoFar;
   const noMiss=turnResults.every(r=>r!=='MISS')&&turnResults.length>0;
 
-  if(enemyHP<=0){ streakCount=0; perfectStreakCount=0; perfectStreakMultiplier=1.0; setTimeout(()=>advanceEnemy(),1200); return; }
+  if(enemyHP<=0){ streakCount=0; perfectStreakCount=0; perfectStreakMultiplier=1.0; stopBGM(); bgmPending=false; bgm2Pending=false; setTimeout(()=>advanceEnemy(),1200); return; }
 
   if(noMiss){
     streakCount++; streakActive=true; streakTextTimer=BEAT*1000;
     sfx.streak(streakCount);
+    // BGM: mark pending at streak 3, will start at first glyph dot
+    if(streakCount>=3&&!bgmPlaying) bgmPending=true;
+    if(streakCount>=4&&!bgm2Playing) bgm2Pending=true;
+    if(bgmPlaying) updateBGMVolume();
     // Streak 3 tutorial: pause after completing streak 2
     if(streakCount===3&&!streak3TutorialDone){
       streak3TutorialActive=true; streak3TutorialDone=true;
@@ -1164,6 +1233,7 @@ function finishPlaying(){
     }
   } else {
     streakCount=0; streakActive=false; perfectStreakCount=0; perfectStreakMultiplier=1.0;
+    stopBGM(); bgmPending=false; bgm2Pending=false; bgmPending=false;
     setTimeout(()=>{ showingResults=false; $('result-display').textContent=''; enemyTurn(); },800);
   }
 }
@@ -1255,6 +1325,7 @@ function drawEnemyTurn(){
 
 
 function advanceEnemy(){
+  stopBGM(); bgmPending=false; bgm2Pending=false;
   gold+=20; bowCharge=0; bowShotDmg=0; bowShooting=false; bowFShotCount=0; // defeat bonus + bow reset
   enemyNum++;
   enemyMaxHP=getEnemyHP(enemyNum); enemyHP=enemyMaxHP;
@@ -1291,6 +1362,7 @@ function resetGame(){
   paused=false; $('pause-screen').style.display='none'; $('pause-btn').textContent='⏸';
   particles=[]; shake=0; floatingAnims=[]; shieldAnims=[]; slashProjectiles=[];
   streakCount=0; streakActive=false; perfectStreakCount=0; perfectStreakMultiplier=1.0;
+  stopBGM();
   tutorialActive=false; tutorialPaused=false; tutorialStep=0; tutorialDone=false; tutorialRollCount=0;
   streak3TutorialActive=false;
   $('tutorial-text').style.display='none';
@@ -1342,7 +1414,9 @@ $('resume-btn').addEventListener('click',togglePause);
   const audioFiles=[
     ['slot','Slot.wav'],['sword','Sword.wav'],['shield','Shield.wav'],
     ['coin','Coin.wav'],['snare','Snare.wav'],
-    ['bow_charge','Bow_charge.wav'],['bow_shoot','Bow_Shoot.wav']
+    ['bow_charge','Bow_charge.wav'],['bow_shoot','Bow_Shoot.wav'],
+    ['bgm_loop','Dundun%2090-1.wav'],
+    ['bgm_loop2','Shaker02_90.wav']
   ];
   const imageNames=['sword','shield','gold','bow'];
   const total=audioFiles.length+imageNames.length;
@@ -1586,6 +1660,13 @@ function update(ts){
       if(!tutorialPaused) dotProg+=(1/edgeDurs[dotSeg])*(dt/1000);
 
       if(dotProg>=1){
+        // BGM: start at first vertex crossing
+        if(bgmPending&&!bgmPlaying){
+          startBGM(); bgmPending=false;
+        }
+        if(bgm2Pending&&!bgm2Playing){
+          startBGM2(); bgm2Pending=false;
+        }
         // Tutorial: pause exactly at vertex if untapped
         if(tutorialActive&&tutorialStep===0){
           const toV=glyphEdges[dotSeg].to;
