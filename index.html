@@ -2,12 +2,18 @@
 
 <html lang="en">
 <head>
-<link href="https://fonts.cdnfonts.com/css/bytebounce" rel="stylesheet">
+<link rel="preload" href="https://fonts.cdnfonts.com/s/104826/ByteBounce.woff" as="font" type="font/woff" crossorigin>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Rhythm Hero</title>
 <style>
-@import url('https://fonts.cdnfonts.com/css/bytebounce');
+@font-face {
+  font-family: 'ByteBounce';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('https://fonts.cdnfonts.com/s/104826/ByteBounce.woff') format('woff');
+  font-display: swap;
+}
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 html{height:100%;overflow:hidden}
