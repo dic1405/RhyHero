@@ -657,7 +657,7 @@ function startBGM(){
   bgmSource.buffer=audioBuffers.bgm_loop;
   bgmSource.loop=true;
   bgmSource.playbackRate.value=currentBPM/BGM_BASE_BPM;
-  bgmGain.gain.value=0.2;
+  bgmGain.gain.value=0.1;
   bgmSource.connect(bgmGain);
   bgmGain.connect(ac.destination);
   bgmSource.start();
@@ -671,7 +671,7 @@ function startBGM2(){
   bgm2Source.buffer=audioBuffers.bgm_loop2;
   bgm2Source.loop=true;
   bgm2Source.playbackRate.value=currentBPM/BGM_BASE_BPM;
-  bgm2Gain.gain.value=0.02;
+  bgm2Gain.gain.value=0.03;
   bgm2Source.connect(bgm2Gain);
   bgm2Gain.connect(ac.destination);
   bgm2Source.start();
@@ -693,12 +693,12 @@ function stopBGM(){
 
 function updateBGMVolume(){
   if(!bgmGain||!bgmPlaying) return;
-  if(streakCount>=7) bgmGain.gain.value=1.0;
-  else if(streakCount>=4) bgmGain.gain.value=0.6;
-  else if(streakCount>=3) bgmGain.gain.value=0.2;
+  if(streakCount>=7) bgmGain.gain.value=0.5;
+  else if(streakCount>=4) bgmGain.gain.value=0.3;
+  else if(streakCount>=3) bgmGain.gain.value=0.1;
   if(bgm2Gain&&bgm2Playing){
-    if(streakCount>=7) bgm2Gain.gain.value=0.1;
-    else bgm2Gain.gain.value=0.06;
+    if(streakCount>=7) bgm2Gain.gain.value=0.20;
+    else bgm2Gain.gain.value=0.12;
   }
 }
 
