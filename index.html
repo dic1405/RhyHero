@@ -972,8 +972,11 @@ function evalHit(){
 
 function handleHit(){
   if(!phaseActive||showingResults) return;
-  // Tutorial: unpause on tap
-  if(tutorialPaused&&tutorialStep===0){ tutorialPaused=false; $('tutorial-text').style.display='none'; }
+  // Tutorial: unpause on tap, advance past vertex
+  if(tutorialPaused&&tutorialStep===0){
+    tutorialPaused=false; $('tutorial-text').style.display='none';
+    if(dotProg>=1){ dotProg=0; dotSeg++; if(dotSeg>=glyphEdges.length){ dotSeg=glyphEdges.length-1; dotProg=1; endPauseTimer=BEAT*1000; } }
+  }
   const r=evalHit();
   if(r.rating!=='MISS'){
     const idx=r.forceIdx||(r.nearEnd?glyphEdges[dotSeg].to:glyphEdges[dotSeg].from);
@@ -1517,22 +1520,25 @@ function update(ts){
 
     if(phaseActive&&edgeDurs.length>0&&endPauseTimer<=0){
       if(!tutorialPaused) dotProg+=(1/edgeDurs[dotSeg])*(dt/1000);
-      // Tutorial: pause at vertex if untapped
-      if(tutorialActive&&tutorialStep===0&&dotSeg<glyphEdges.length){
-        const toV=glyphEdges[dotSeg].to;
-        const ms=edgeDurs[dotSeg]*1000;
-        const tEnd=(1-dotProg)*ms;
-        if(toV>0&&!intHits[toV]&&tEnd<300){
-          tutorialPaused=true;
-          $('tutorial-text').style.display='block';
-          $('tutorial-text').textContent='Tap the empty space when the dot reaches the intersection';
-        }
-      }
+
       if(dotProg>=1){
-        dotProg-=1; dotSeg++;
+        // Tutorial: pause exactly at vertex if untapped
+        if(tutorialActive&&tutorialStep===0){
+          const toV=glyphEdges[dotSeg].to;
+          if(toV>0&&!intHits[toV]){
+            dotProg=1; // hold at vertex
+            tutorialPaused=true;
+            $('tutorial-text').style.display='block';
+            $('tutorial-text').textContent='Tap the empty space when the dot reaches the intersection';
+            // Don't advance segment yet
+          } else {
+            dotProg-=1; dotSeg++;
+          }
+        } else {
+          dotProg-=1; dotSeg++;
+        }
         // Don't mark untapped vertex as MISS yet — grace period for late taps
-        // Sound only plays for already-tapped vertices (confirmation)
-        if(intHits[dotSeg]){
+        if(dotSeg<glyphEdges.length&&intHits[dotSeg]){
           // Already tapped — no action needed
         }
         if(dotSeg>=glyphEdges.length){
