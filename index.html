@@ -1047,7 +1047,7 @@ function buildGlyph(edgeMults, cx, cy){
   const baseAngle=n>5?Math.PI/4:Math.PI/3;
   const gameEdges=n-1;
   const gameW=edgeMults.slice(1).reduce((a,b)=>a+b,0);
-  const maxW=W()-50;
+  const maxW=W()-(bowUnlocked?90:50);
   const maxVH=H()*0.46;
   const baseUnit=280*(3/Math.max(3,activeSlots));
   const estH=gameW*Math.cos(baseAngle)*(shapeType===2?.6:1);
@@ -1091,6 +1091,14 @@ function buildGlyph(edgeMults, cx, cy){
   const ox=cx-(Math.min(...xs)+Math.max(...xs))/2;
   const oy=cy-(Math.min(...ys)+Math.max(...ys))/2;
   verts.forEach(v=>{v.x+=ox;v.y+=oy});
+  // Clamp glyph to screen bounds
+  let minX=Infinity,maxX2=-Infinity,minY=Infinity,maxY2=-Infinity;
+  verts.forEach(v=>{minX=Math.min(minX,v.x);maxX2=Math.max(maxX2,v.x);minY=Math.min(minY,v.y);maxY2=Math.max(maxY2,v.y);});
+  const pad=20,bowPad=bowUnlocked?45:0;
+  if(minX<pad) verts.forEach(v=>{v.x+=(pad-minX);});
+  if(maxX2>W()-pad-bowPad) verts.forEach(v=>{v.x-=(maxX2-(W()-pad-bowPad));});
+  if(minY<H()*0.35) verts.forEach(v=>{v.y+=(H()*0.35-minY);});
+  if(maxY2>H()*0.85) verts.forEach(v=>{v.y-=(maxY2-H()*0.85);});
 
   const edges=[], durs=[];
   for(let i=0;i<n;i++){
