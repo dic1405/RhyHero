@@ -2,7 +2,7 @@
 
 <html lang="en">
 <head>
-<link rel="preload" href="https://fonts.cdnfonts.com/s/104826/ByteBounce.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="https://raw.githubusercontent.com/dic1405/RhyHero/main/ByteBounce.woff" as="font" type="font/woff" crossorigin>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Rhythm Hero</title>
@@ -11,7 +11,8 @@
   font-family: 'ByteBounce';
   font-style: normal;
   font-weight: 100 900;
-  src: url('https://fonts.cdnfonts.com/s/104826/ByteBounce.woff') format('woff');
+  src: url('https://raw.githubusercontent.com/dic1405/RhyHero/main/ByteBounce.woff') format('woff'),
+       url('https://fonts.cdnfonts.com/s/104826/ByteBounce.woff') format('woff');
   font-display: swap;
 }
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
@@ -43,7 +44,7 @@ canvas{display:block;width:100%;height:100%}
 #phase-label{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);font:52px/1 'ByteBounce',monospace;font-weight:900;color:#fff;text-shadow:0 0 30px currentColor;opacity:0;transition:opacity .3s;pointer-events:none}
 #hit-fb{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font:36px 'ByteBounce',monospace;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s,transform .3s;text-align:center;width:90%}
 #result-display{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);font:22px 'ByteBounce',monospace;color:#aaa;text-align:center;pointer-events:none;white-space:nowrap}
-.overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(5,5,10,.93);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;pointer-events:auto}
+.overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(5,5,10,.93);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;pointer-events:auto;font-family:'ByteBounce',sans-serif}
 .overlay h1{font:64px 'ByteBounce',monospace;font-weight:900;margin-bottom:14px}
 .overlay p{font:32px 'ByteBounce',sans-serif;color:#888;margin-bottom:20px}
 .btn{font:28px 'ByteBounce',monospace;padding:12px 36px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;transition:all .2s}
@@ -57,7 +58,8 @@ canvas{display:block;width:100%;height:100%}
 #pause-btn{position:absolute;top:12px;left:12px;font-size:20px;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid #ffffff22;color:#ffffff88;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;line-height:1}
 #pause-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
 
-#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:space-between}
+#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:space-between;font-family:‘ByteBounce’,sans-serif !important}
+#shop-screen *{font-family:‘ByteBounce’,sans-serif !important}
 #shop-screen h2{font:40px ‘ByteBounce’;color:#fff;margin:20px 0 0 0;flex-shrink:0}
 #shop-gold-display{font:28px ‘ByteBounce’;color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
 .shop-middle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;overflow-y:auto}
