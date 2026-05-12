@@ -390,6 +390,7 @@ function buyItem(idx){
   const cost=getItemCost(item);
   gold-=cost;
   shopSold[idx]=true;
+  ensureAC(); play('coin',0.6);
 
   if(item.id==='upgrade_sword'){
     upgradeCounts.sword++;
@@ -445,6 +446,7 @@ function rerollShop(){
   const cost=getRerollCost();
   if(gold<cost) return;
   gold-=cost; rerollCount++;
+  ensureAC(); play('slot',0.6);
   generateShopItems();
   updateUI(); renderShop();
 }
@@ -508,6 +510,7 @@ let selectedItem=null; // {type:'passive'|'usable', idx:number}
 function selectItem(type, idx){
   const item=type==='passive'?passiveSlots[idx]:usableSlots[idx];
   if(!item||item.cost<=0) return;
+  ensureAC(); play('penclick',0.6);
   selectedItem={type,idx};
   const refund=Math.floor(item.cost/2);
   $('sell-info').textContent=item.name+' → 💰'+refund;
@@ -523,6 +526,7 @@ function deselectItem(){
 
 function confirmSell(){
   if(!selectedItem) return;
+  ensureAC(); play('coin',0.6);
   if(selectedItem.type==='passive') sellPassive(selectedItem.idx);
   else sellUsable(selectedItem.idx);
   selectedItem=null;
@@ -568,6 +572,7 @@ function closeShop(){
 function useItem(idx){
   const item=usableSlots[idx];
   if(!item||slotPhase!=='waiting') return;
+  ensureAC(); play('penclick',0.6);
   if(item.id==='health_potion'){
     playerHP=Math.min(playerHP+40,PLAYER_MAX_HP);
   } else if(item.id==='rare_potion'){
@@ -1417,7 +1422,8 @@ $('resume-btn').addEventListener('click',togglePause);
     ['coin','Coin.wav'],['snare','Snare.wav'],
     ['bow_charge','Bow_charge.wav'],['bow_shoot','Bow_Shoot.wav'],
     ['bgm_loop','Dundun%2090-1.wav'],
-    ['bgm_loop2','Shaker02_90.wav']
+    ['bgm_loop2','Shaker02_90.wav'],
+    ['penclick','PenClick.wav']
   ];
   const imageNames=['sword','shield','gold','bow'];
   const total=audioFiles.length+imageNames.length;
