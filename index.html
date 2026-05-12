@@ -1123,6 +1123,7 @@ function finishPlaying(){
 
 function updateStreak(dt){
   if(!streakActive) return;
+  if(tutorialPaused||streak3TutorialActive) return; // Don't auto-roll during tutorial pause
   streakTextTimer-=dt;
   if(streakTextTimer<=0){ streakActive=false; showingResults=false; $('hit-fb').style.opacity=0; startSlotPhase(); }
 }
