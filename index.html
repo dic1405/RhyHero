@@ -1374,7 +1374,7 @@ function updateRB(dt){
       streakCount=0;streakActive=false;perfectStreakCount=0;perfectStreakMultiplier=1.0;
       stopBGM();
       if(enemyHP<=0){ setTimeout(()=>advanceEnemy(),1200); }
-      else { setTimeout(()=>{ slotPhase='enemyAttack';enemyAttackTimer=fb;enemyAttackDur=fb; },300); }
+      else { setTimeout(()=>showRollButton(),300); }
     }
   }
   for(let s=0;s<RB_SLOTS;s++) for(let h=0;h<RB_HALVES;h++) if(rbBeatFlash[s]&&rbBeatFlash[s][h]>0) rbBeatFlash[s][h]=Math.max(0,rbBeatFlash[s][h]-dt);
