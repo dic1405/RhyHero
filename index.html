@@ -1501,7 +1501,23 @@ function drawSlots(){
   }
 }
 
-function drawIndicators(){}
+function drawIndicators(){
+  // Bow charge bar
+  if(bowUnlocked){
+    const bx=W()-35, by=H()*.40, bh=H()*.30, bw=8;
+    const pct=Math.min(1,bowCharge/getBowMaxCharge());
+    ctx.globalAlpha=0.6;
+    ctx.fillStyle='#1a1a24'; ctx.fillRect(bx,by,bw,bh);
+    ctx.strokeStyle='#88ff4444'; ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
+    const fillH=bh*pct;
+    ctx.fillStyle=pct>0.8?'#ff4444':'#88ff44';
+    ctx.fillRect(bx,by+bh-fillH,bw,fillH);
+    ctx.globalAlpha=0.4;
+    ctx.font='14px ByteBounce'; ctx.textAlign='center'; ctx.fillStyle='#fff';
+    ctx.fillText(Math.floor(bowCharge),bx+bw/2,by-4);
+    ctx.globalAlpha=1;
+  }
+}
 
 function drawGlyph(){
   ctx.globalAlpha=1;
