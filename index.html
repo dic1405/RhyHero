@@ -47,7 +47,7 @@ canvas{display:block;width:100%;height:100%}
 .overlay p{font:32px 'ByteBounce',sans-serif;color:#888;margin-bottom:20px}
 .btn{font:28px 'ByteBounce',monospace;padding:12px 36px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;transition:all .2s}
 .btn:hover{background:#00ffaa;color:#0a0a0f}
-#roll-btn:hover{background:#ffaa00;color:#0a0a0f;border-color:#ffaa00}
+#roll-btn:hover{background:#00ffaa !important;color:#000 !important;border-color:#00ffaa}
 #start-screen{display:flex}
 #start-screen h1{color:#00ffaa;text-shadow:0 0 40px #00ffaa44}
 #start-screen .sub{font:36px 'ByteBounce',sans-serif;color:#556;margin-bottom:30px}
@@ -92,7 +92,7 @@ canvas{display:block;width:100%;height:100%}
 .inv-slot.filled[style*='cursor']{border-color:#ffaa0044}
 .inv-slot.filled[style*='cursor']:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
 .shop-bottom{display:flex;flex-direction:column;align-items:center;padding-bottom:20px;width:100%;flex-shrink:0}
-#shop-continue{font:28px 'ByteBounce';padding:12px 40px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
+#shop-continue{font:20px 'ByteBounce';padding:8px 28px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
 #usable-bar{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
 .usable-btn{width:32px;height:32px;border:1px solid #ffffff22;border-radius:4px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;color:#fff;transition:all .2s}
 .usable-btn:hover{border-color:#00ffaa}
@@ -123,7 +123,10 @@ canvas{display:block;width:100%;height:100%}
   <div id="tutorial-text" style="display:none;position:absolute;top:36%;left:50%;transform:translateX(-50%);font:20px ByteBounce;color:#ffe066;text-align:center;width:85%;pointer-events:none;text-shadow:0 0 10px #ffaa0044;z-index:100;line-height:1.6"></div>
   <div id="result-display"></div>
   <button id="pause-btn">⏸</button>
-  <button id="roll-btn" class="btn" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;border-color:#ffaa00;color:#ffaa00;font-size:18px;padding:16px 50px">🎲 ROLL</button>
+  <div id="roll-wrap" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;flex-direction:column;align-items:center;gap:8px">
+    <button id="roll-btn" class="btn" style="border-color:#00ffaa;color:#00ffaa;font-size:18px;padding:16px 50px">ROLL</button>
+    <button id="speed-switch" style="font:14px 'ByteBounce';padding:4px 16px;background:0 0;border:1px solid #ffffff33;color:#888;cursor:pointer;border-radius:3px">x1 tempo</button>
+  </div>
   <div id="pause-screen" class="overlay">
     <h1 style="color:#ffaa00;text-shadow:0 0 40px #ffaa0044">PAUSED</h1>
     <p>Press ESC or tap to resume</p>
@@ -308,7 +311,7 @@ function getEnemyHP(lvl){
   return hp;
 }
 function updateTempo(){
-  currentBPM=getTempo(enemyNum);
+  currentBPM=getTempo(enemyNum)*speedMultiplier;
   if(enemyNum<=7) slotCount=3;
   else if(enemyNum<=14) slotCount=4;
   else slotCount=5;
@@ -642,6 +645,7 @@ let allPerfectSoFar=true, isAllPerfect=false;
 
 let streakCount=0, streakTextTimer=0, streakActive=false;
 let perfectStreakCount=0, perfectStreakMultiplier=1.0;
+let speedMultiplier=1;
 let bgmSource=null, bgmGain=null, bgmPlaying=false, bgmPending=false;
 let bgm2Source=null, bgm2Gain=null, bgm2Playing=false, bgm2Pending=false;
 const BGM_BASE_BPM=90;
@@ -765,7 +769,7 @@ function updateUI(){
 
 // ── Slot Machine ──
 function showRollButton(){
-  $('roll-btn').style.display='block';
+  $('roll-wrap').style.display='flex';
   $('result-display').textContent='';
   slotPhase='waiting';
   // Boss tutorial: first boss (level 5)
@@ -783,7 +787,7 @@ function showRollButton(){
 }
 
 function startSlotPhase(){
-  $('roll-btn').style.display='none';
+  $('roll-wrap').style.display='none';
   $('result-display').textContent='';
   activeSlots=slotCount+getStreakSlotCount();
   slotIcons=Array.from({length:activeSlots},rollIcon);
@@ -1409,6 +1413,7 @@ function drawEnemyTurn(){
 }
 
 function advanceEnemy(){
+  speedMultiplier=1; updateTempo();
   stopBGM(); bgmPending=false; bgm2Pending=false;
   gold+=20; bowCharge=0; bowShotDmg=0; bowShooting=false; bowFShotCount=0; // defeat bonus + bow reset
   enemyNum++;
@@ -1425,7 +1430,7 @@ function advanceEnemy(){
 }
 
 function endGame(){
-  $('roll-btn').style.display='none';
+  $('roll-wrap').style.display='none';
   $('gameover-screen').style.display='flex';
   $('go-title').textContent='DEFEATED'; $('go-title').style.color='#ff3366';
   $('go-sub').textContent=`Fell at enemy ${enemyNum}. Gold: ${gold}. Defeated: ${enemyNum-1}`;
@@ -1539,7 +1544,18 @@ $('resume-btn').addEventListener('click',togglePause);
 
 $('start-btn').addEventListener('click',()=>{$('start-screen').style.display='none';updateTempo();showRollButton()});
 $('restart-btn').addEventListener('click',resetGame);
-$('roll-btn').addEventListener('click',()=>{ensureAC();$('tutorial-text').style.display='none';startSlotPhase()});
+$('roll-btn').addEventListener('click',()=>{ensureAC();$('tutorial-text').style.display='none';updateTempo();startSlotPhase()});
+const speedStages=[1,1.5,2];
+const speedLabels=['x1 tempo','x1.5 tempo','x2 tempo'];
+const speedColors=['#888','#ff8844','#ff4466'];
+let speedIdx=0;
+$('speed-switch').addEventListener('click',()=>{
+  speedIdx=(speedIdx+1)%3;
+  speedMultiplier=speedStages[speedIdx];
+  $('speed-switch').textContent=speedLabels[speedIdx];
+  $('speed-switch').style.color=speedColors[speedIdx];
+  $('speed-switch').style.borderColor=speedColors[speedIdx]+'66';
+});
 
 // ── Drawing ──
 function drawBG(){
