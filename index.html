@@ -295,14 +295,14 @@ function getTempo(lvl){
 }
 function getEnemyHP(lvl){
   if(lvl===1) return 250;
-  let hp=200, lastNonBoss=200;
+  let hp=270, lastNonBoss=270;
   for(let i=2;i<=lvl;i++){
+    const rate=i<=10?0.04:i<=30?0.05:0.06;
     if(isBoss(i)){
-      hp=Math.floor(lastNonBoss*1.5);
-    } else if(isBoss(i-1)){
-      hp=lastNonBoss+12; lastNonBoss=hp;
+      hp=Math.floor(lastNonBoss*1.15);
     } else {
-      hp=lastNonBoss+6; lastNonBoss=hp;
+      hp=Math.floor(lastNonBoss*(1+rate));
+      lastNonBoss=hp;
     }
   }
   return hp;
@@ -317,7 +317,7 @@ function updateTempo(){
 }
 let PLAYER_MAX_HP = 100;
 let PLAYER_MAX_SHIELD = 100;
-const BASE_ENEMY_HP = 200;
+const BASE_ENEMY_HP = 270;
 const BASE_ENEMY_DMG = 35;
 const ICONS = ['sword','shield','gold'];
 const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00', bow:'#88ff44' };
@@ -634,6 +634,7 @@ let iconDotVertices=[];
 
 let glyphVerts=[], glyphEdges=[], edgeDurs=[];
 let dotSeg=0, dotProg=0, intHits=[], vertexRatings=[], totalInts=0;
+let muteVertices=new Set();
 let turnResults=[], phaseActive=false, showingResults=false, endPauseTimer=0;
 
 let baseValues={sword:0,shield:0,gold:0,bow:0}, tapValues={sword:0,shield:0,gold:0,bow:0};
@@ -708,6 +709,7 @@ function getSfxVolMultiplier(){
 let tutorialActive=false, tutorialPaused=false, tutorialStep=0, tutorialDone=false;
 let tutorialRollCount=0;
 let streak3TutorialDone=false, streak3TutorialActive=false;
+let bossTutorialFirstRoll=false;
 let particles=[], floatingAnims=[], shieldAnims=[];
 let slashProjectiles=[];
 let shake=0, glow=0, lastTime=0, paused=false;
@@ -766,6 +768,12 @@ function showRollButton(){
   $('roll-btn').style.display='block';
   $('result-display').textContent='';
   slotPhase='waiting';
+  // Boss tutorial: first boss (level 5)
+  if(isBoss(enemyNum)){
+    if(enemyNum===5) bossTutorialFirstRoll=true;
+    $('tutorial-text').style.display='block';
+    $('tutorial-text').innerHTML='<span style="color:#fff">Do not tap on the </span><span style="display:inline-block;width:28px;height:12px;border:2px solid #ff3366;border-radius:2px;vertical-align:middle;margin:0 4px"></span';
+  }
   activeSlots=slotCount; // reset to base (no streak bonus)
   slotRevealedIcons=new Array(activeSlots).fill(false);
   slotBeatLines=new Array(activeSlots).fill(0); slotBeatFlash=new Array(activeSlots).fill(0);
@@ -797,6 +805,28 @@ function startSlotPhase(){
     const p=patterns[tutorialRollCount%patterns.length];
     slotIcons=p.icons.slice(); slotBeats=p.beats.slice();
     tutorialRollCount++;
+  }
+  // Boss mute beats: 50% chance during boss fights
+  muteVertices=new Set();
+  if(bossTutorialFirstRoll){
+    bossTutorialFirstRoll=false;
+    slotIcons=['gold','shield','sword'];
+    slotBeats=['F','F','MF'];
+  } else if(isBoss(enemyNum)&&Math.random()<0.5){
+    const muteCount=Math.random()<0.5?1:2;
+    const available=[...Array(activeSlots).keys()];
+    for(let m=0;m<muteCount&&available.length>0;m++){
+      const pick=available.splice(Math.floor(Math.random()*available.length),1)[0];
+      const ic=slotIcons[pick];
+      if(ic==='sword'){
+        slotBeats[pick]='MF';
+      } else {
+        const r=Math.random();
+        if(r<0.33) slotBeats[pick]='MF';
+        else if(r<0.66) slotBeats[pick]='MH';
+        else slotBeats[pick]='HM';
+      }
+    }
   }
   slotRevealedIcons=new Array(activeSlots).fill(false);
   slotPhase='rolling'; slotRollAnim=0;
@@ -831,6 +861,9 @@ function startSlotPhase(){
     const bt=slotBeats[i];
     if(bt==='F'){ edges.push(1); vp+=1; }
     else if(bt==='HH'){ edges.push(.5); edges.push(.5); vp+=2; }
+    else if(bt==='MF'){ muteVertices.add(vp); edges.push(1); vp+=1; }
+    else if(bt==='MH'){ muteVertices.add(vp); edges.push(.5); edges.push(.5); vp+=2; }
+    else if(bt==='HM'){ edges.push(.5); muteVertices.add(vp+1); edges.push(.5); vp+=2; }
     else { edges.push(.5); vp+=1; }
   }
   edges.pop();
@@ -838,8 +871,9 @@ function startSlotPhase(){
   const vertToSlot={};
   let vc=1;
   for(let i=0;i<activeSlots;i++){
-    if(slotBeats[i]==='HH') vertToSlot[vc+1]=i;
-    vc+=(slotBeats[i]==='HH'?2:1);
+    const b=slotBeats[i];
+    if(b==='HH'||b==='MH'||b==='HM') vertToSlot[vc+1]=i;
+    vc+=(b==='HH'||b==='MH'||b==='HM'?2:1);
   }
 
   slotSchedule=[{time:0,action:'init',slot:-1}];
@@ -848,8 +882,15 @@ function startSlotPhase(){
   for(let e=0;e<edges.length;e++){
     t+=edges[e]*BEAT*1000;
     const v=e+1, ii=iconVerts.indexOf(v);
-    if(ii>=0) slotSchedule.push({time:t,action:'reveal',slot:ii});
-    else slotSchedule.push({time:t,action:'snare',slot:vertToSlot[v]??-1});
+    if(ii>=0) slotSchedule.push({time:t,action:'reveal',slot:ii,vertex:v});
+    else {
+      let sAction='snare';
+      if(muteVertices.has(v)){
+        const si=vertToSlot[v];
+        sAction=(si!==undefined&&slotBeats[si]==='HM')?'muteSnare':'snare';
+      }
+      slotSchedule.push({time:t,action:sAction,slot:vertToSlot[v]??-1,vertex:v});
+    }
   }
   slotScheduleTime=0; slotScheduleIdx=0;
 
@@ -914,10 +955,21 @@ function updateSlots(dt){
       if(ev.action==='reveal'){
         slotRevealedIcons[ev.slot]=true;
         const ic=slotIcons[ev.slot], bt=slotBeats[ev.slot];
-        if(ic==='bow'){ play(bt==='F'?'bow_shoot':'bow_charge'); }
+        if(bt==='MF'||bt==='MH'){
+          play('mutebeat',0.8);
+        } else if(bt==='HM'){
+          sfx.slotLand(ic);
+        } else if(ic==='bow'){ play(bt==='F'?'bow_shoot':'bow_charge'); }
         else sfx.slotLand(ic);
         slotBeatLines[ev.slot]=1; slotBeatFlash[ev.slot]=300;
-        applySlotReveal(ev.slot);
+        if(slotBeats[ev.slot]==='MF'&&slotIcons[ev.slot]==='bow'){
+          bowCharge=0; bowShotDmg=0; bowFShotCount=0;
+        } else if(!slotBeats[ev.slot].startsWith('M')){
+          applySlotReveal(ev.slot);
+        }
+      } else if(ev.action==='muteSnare'){
+        play('mutebeat',0.6);
+        if(ev.slot>=0){ slotBeatLines[ev.slot]=2; slotBeatFlash[ev.slot]=300; }
       } else if(ev.action==='init'){ play('slot',1,Math.pow(2,streakCount*2/12));
       } else if(ev.action==='snare'){
         const sic=ev.slot>=0?slotIcons[ev.slot]:null;
@@ -950,12 +1002,15 @@ function updateSlots(dt){
 // ── Glyph Building ──
 function buildRhythmFromSlots(){
   const edges=[1];
-  iconDotVertices=[]; let vp=1;
+  iconDotVertices=[]; muteVertices=new Set(); let vp=1;
   for(let i=0;i<activeSlots;i++){
     iconDotVertices.push(vp);
     const bt=slotBeats[i];
     if(bt==='F'){ edges.push(1); vp+=1; }
     else if(bt==='HH'){ edges.push(.5); edges.push(.5); vp+=2; }
+    else if(bt==='MF'){ muteVertices.add(vp); edges.push(1); vp+=1; }
+    else if(bt==='MH'){ muteVertices.add(vp); edges.push(.5); edges.push(.5); vp+=2; }
+    else if(bt==='HM'){ edges.push(.5); muteVertices.add(vp+1); edges.push(.5); vp+=2; }
     else { edges.push(.5); vp+=1; }
   }
   edges.pop();
@@ -1085,6 +1140,33 @@ function evalHit(){
 
 function handleHit(){
   if(!phaseActive||showingResults) return;
+  // Mute vertex: tapping on it = MISS
+  if(muteVertices.size>0&&phaseActive){
+    let nearV=-1;
+    if(endPauseTimer>0){
+      nearV=glyphEdges[glyphEdges.length-1].to;
+    } else if(dotSeg<glyphEdges.length){
+      const fromV=glyphEdges[dotSeg].from;
+      const toV=glyphEdges[dotSeg].to;
+      nearV=dotProg<0.5?fromV:toV;
+    }
+    if(nearV>0&&muteVertices.has(nearV)&&!intHits[nearV]){
+      let msToVertex=999;
+      if(endPauseTimer>0){
+        msToVertex=0;
+      } else if(dotSeg<glyphEdges.length){
+        const dur=edgeDurs[dotSeg]*1000;
+        if(dotProg<0.5) msToVertex=dotProg*dur;
+        else msToVertex=(1-dotProg)*dur;
+      }
+      if(msToVertex<230){
+        intHits[nearV]=true; vertexRatings[nearV]='MISS'; turnResults.push('MISS');
+        allPerfectSoFar=false;
+        showFB('MISS'); play('mutebeat',0.8);
+        return;
+      }
+    }
+  }
   // Tutorial: unpause on tap, advance past vertex
   if(tutorialPaused&&tutorialStep===0){
     tutorialPaused=false; $('tutorial-text').style.display='none';
@@ -1419,7 +1501,8 @@ $('resume-btn').addEventListener('click',togglePause);
     ['bow_charge','Bow_charge.wav'],['bow_shoot','Bow_Shoot.wav'],
     ['bgm_loop','Dundun%2090-1.wav'],
     ['bgm_loop2','Shaker02_90.wav'],
-    ['penclick','PenClick.wav']
+    ['penclick','PenClick.wav'],
+    ['mutebeat','MuteBeat.wav']
   ];
   const imageNames=['sword','shield','gold','bow'];
   const total=audioFiles.length+imageNames.length;
@@ -1456,7 +1539,7 @@ $('resume-btn').addEventListener('click',togglePause);
 
 $('start-btn').addEventListener('click',()=>{$('start-screen').style.display='none';updateTempo();showRollButton()});
 $('restart-btn').addEventListener('click',resetGame);
-$('roll-btn').addEventListener('click',()=>{ensureAC();startSlotPhase()});
+$('roll-btn').addEventListener('click',()=>{ensureAC();$('tutorial-text').style.display='none';startSlotPhase()});
 
 // ── Drawing ──
 function drawBG(){
@@ -1497,6 +1580,19 @@ function drawSlots(){
       const hw=(sw-lp)/2;
       if(slotBeatLines[i]>=1){ const f1=slotBeatLines[i]===1&&slotBeatFlash[i]>0?.5+(slotBeatFlash[i]/300)*.5:.3; ctx.fillStyle=`rgba(255,255,255,${f1})`; ctx.fillRect(x,by,hw,lh); }
       if(slotBeatLines[i]>=2){ const f2=slotBeatFlash[i]>0?.5+(slotBeatFlash[i]/300)*.5:.3; ctx.fillStyle=`rgba(255,255,255,${f2})`; ctx.fillRect(x+hw+lp,by,hw,lh); }
+    } else if(bt==='MF'){
+      ctx.strokeStyle=`rgba(255,51,102,${fl+0.3})`; ctx.lineWidth=1.5;
+      ctx.strokeRect(x+2,by-1,sw-4,lh+2);
+    } else if(bt==='MH'){
+      const hw=(sw-lp)/2;
+      ctx.strokeStyle=`rgba(255,51,102,${fl+0.3})`; ctx.lineWidth=1.5;
+      ctx.strokeRect(x+2,by-1,hw-4,lh+2);
+      if(slotBeatLines[i]>=2){ ctx.fillStyle=`rgba(255,255,255,${fl})`; ctx.fillRect(x+hw+lp,by,hw,lh); }
+    } else if(bt==='HM'){
+      const hw=(sw-lp)/2;
+      if(slotBeatLines[i]>=1){ ctx.fillStyle=`rgba(255,255,255,${fl})`; ctx.fillRect(x,by,hw,lh); }
+      ctx.strokeStyle=`rgba(255,51,102,${fl+0.3})`; ctx.lineWidth=1.5;
+      ctx.strokeRect(x+hw+lp+2,by-1,hw-4,lh+2);
     } else { const hw=(sw-lp)/2; ctx.fillStyle=`rgba(255,255,255,${fl})`; ctx.fillRect(x+(sw-hw)/2,by,hw,lh); }
   }
 }
@@ -1558,7 +1654,24 @@ function drawGlyph(){
 
   // Vertices — circle opacity with timing ramp
   glyphVerts.forEach((v,i)=>{
-    const hit=intHits[i], isInit=i===0;
+    const hit=intHits[i], isInit=i===0, isMute=muteVertices.has(i);
+    if(isMute&&!hit){
+      const so=getStreakOpacity();
+      ctx.globalAlpha=Math.max(so[1],0.4);
+      ctx.strokeStyle='#ff3366'; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.arc(v.x,v.y,maxR*1.2,0,Math.PI*2); ctx.stroke();
+      ctx.globalAlpha=1;
+      return;
+    }
+    if(isMute&&hit){
+      ctx.globalAlpha=0.6;
+      ctx.fillStyle='#ff336644';
+      ctx.beginPath(); ctx.arc(v.x,v.y,maxR,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='#ff3366'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(v.x,v.y,maxR,0,Math.PI*2); ctx.stroke();
+      ctx.globalAlpha=1;
+      return;
+    }
     let td=Infinity;
     if(phaseActive&&!hit&&!isInit&&dotSeg<glyphEdges.length){
       if(i===glyphEdges[dotSeg].from) td=dotProg*edgeDurs[dotSeg]*1000;
@@ -1699,6 +1812,10 @@ function update(ts){
             dotProg-=1; dotSeg++;
           }
         } else {
+          const crossV=glyphEdges[dotSeg].to;
+          if(crossV>0&&muteVertices.has(crossV)&&!intHits[crossV]){
+            play('mutebeat',0.6);
+          }
           dotProg-=1; dotSeg++;
         }
         // Don't mark untapped vertex as MISS yet — grace period for late taps
@@ -1725,10 +1842,15 @@ function update(ts){
         const fromV=glyphEdges[dotSeg].from;
         const msSinceCross=dotProg*edgeDurs[dotSeg]*1000;
         if(fromV>0&&!intHits[fromV]&&msSinceCross>230){
+          if(muteVertices.has(fromV)){
+            intHits[fromV]=true; vertexRatings[fromV]='PERFECT';
+            turnResults.push('PERFECT');
+          } else {
           intHits[fromV]=true; vertexRatings[fromV]='MISS';
           turnResults.push('MISS'); allPerfectSoFar=false;
           const ii=iconDotVertices.indexOf(fromV);
           if(ii>=0) sfx.slotLand(slotIcons[ii]); else sfx.tick();
+          }
         }
       }
     }
@@ -1738,10 +1860,15 @@ function update(ts){
       // Grace period for last vertex
       const lastV=glyphEdges[glyphEdges.length-1].to;
       if(!intHits[lastV]&&endPauseTimer<(BEAT*1000-230)){
+        if(muteVertices.has(lastV)){
+          intHits[lastV]=true; vertexRatings[lastV]='PERFECT';
+          turnResults.push('PERFECT');
+        } else {
         intHits[lastV]=true; vertexRatings[lastV]='MISS';
         turnResults.push('MISS'); allPerfectSoFar=false;
         const ii=iconDotVertices.indexOf(lastV);
         if(ii>=0) sfx.slotLand(slotIcons[ii]); else sfx.tick();
+        }
       }
       if(endPauseTimer<=0) finishPlaying();
     }
