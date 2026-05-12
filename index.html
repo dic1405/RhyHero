@@ -210,7 +210,7 @@ const ASSET_BASE = 'https://raw.githubusercontent.com/dic1405/RhyHero/main/';
 function tone(f,d,v=.12,t='sine'){
   ensureAC();
   const o=ac.createOscillator(), g=ac.createGain();
-  o.type=t; o.frequency.value=f*Math.pow(2,perfectStreakCount*2/12);
+  o.type=t; o.frequency.value=f*Math.pow(2,streakCount/12);
   g.gain.setValueAtTime(v*getSfxVolMultiplier(), ac.currentTime);
   g.gain.exponentialRampToValueAtTime(.001, ac.currentTime+d);
   o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+d);
@@ -228,7 +228,7 @@ function play(name, vol=1, pitch=1){
   ensureAC();
   const b = audioBuffers[name]; if(!b) return;
   const s=ac.createBufferSource(), g=ac.createGain();
-  s.buffer=b; g.gain.value=vol*getSfxVolMultiplier(); s.playbackRate.value=pitch*Math.pow(2,perfectStreakCount*2/12);
+  s.buffer=b; g.gain.value=vol*getSfxVolMultiplier(); s.playbackRate.value=pitch*Math.pow(2,streakCount/12);
   s.connect(g); g.connect(ac.destination); s.start(0);
 }
 
@@ -993,7 +993,7 @@ function updateSlots(dt){
       } else if(ev.action==='muteSnare'){
         play('mutebeat',0.6);
         if(ev.slot>=0){ slotBeatLines[ev.slot]=2; slotBeatFlash[ev.slot]=300; }
-      } else if(ev.action==='init'){ play('slot',1,Math.pow(2,streakCount*2/12));
+      } else if(ev.action==='init'){ play('slot',1,Math.pow(2,Math.floor(streakCount/2)/12));
       } else if(ev.action==='snare'){
         const sic=ev.slot>=0?slotIcons[ev.slot]:null;
         sfx.tick(); // always snare sound, even for bow
@@ -1137,7 +1137,7 @@ function startGlyphPhase(){
   turnResults=[]; phaseActive=true;
   tapValues={sword:0,shield:0,gold:0,bow:0};
   allPerfectSoFar=true; isAllPerfect=false;
-  play('slot',1,Math.pow(2,streakCount*2/12));
+  play('slot',1,Math.pow(2,Math.floor(streakCount/2)/12));
 }
 
 // ── Hit Detection ──
@@ -1644,7 +1644,7 @@ $('resume-btn').addEventListener('click',togglePause);
 (async function loadAllAssets(){
   ensureAC();
   const audioFiles=[
-    ['slot','Slot.wav'],['sword','Sword.wav'],['shield','Shield.wav'],
+    ['slot','Slot2.wav'],['sword','Sword.wav'],['shield','Shield.wav'],
     ['coin','Coin.wav'],['snare','Snare.wav'],
     ['bow_charge','Bow_charge.wav'],['bow_shoot','Bow_Shoot.wav'],
     ['bgm_loop','Dundun%2090-1.wav'],
