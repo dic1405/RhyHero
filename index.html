@@ -93,7 +93,7 @@ canvas{display:block;width:100%;height:100%}
   <div id="enemy-section">
     <div id="e-label">ENEMY 1</div>
     <div id="e-hp-wrap" class="bar-wrap"><div id="e-hp-fill" class="bar-fill"></div></div>
-    <div id="e-hp-txt">250/250</div>
+    <div id="e-hp-txt">200/200</div>
     <div id="e-atk">ATK: 35</div>
   </div>
   <div id="player-section">
@@ -276,7 +276,7 @@ function getTempo(lvl){
   return base+inc*pos;
 }
 function getEnemyHP(lvl){
-  let hp=250, lastNonBoss=250;
+  let hp=200, lastNonBoss=200;
   for(let i=2;i<=lvl;i++){
     if(isBoss(i)){
       hp=Math.floor(lastNonBoss*1.5);
@@ -296,7 +296,8 @@ function updateTempo(){
   BEAT=60/currentBPM;
 }
 let PLAYER_MAX_HP = 100;
-const BASE_ENEMY_HP = 250;
+let PLAYER_MAX_SHIELD = 100;
+const BASE_ENEMY_HP = 200;
 const BASE_ENEMY_DMG = 35;
 const ICONS = ['sword','shield','gold'];
 const ICON_COLORS = { sword:'#ff4466', shield:'#4488ff', gold:'#ffaa00', bow:'#88ff44' };
@@ -374,6 +375,7 @@ function buyItem(idx){
     upgradeCounts.sword++;
   } else if(item.id==='upgrade_shield'){
     upgradeCounts.shield++;
+    PLAYER_MAX_SHIELD=Math.floor(100*(1+upgradeCounts.shield*0.1));
   } else if(item.id==='upgrade_hp'){
     upgradeCounts.hp++;
     PLAYER_MAX_HP=Math.floor(100*(1+upgradeCounts.hp*0.1));
@@ -659,7 +661,8 @@ function updateUI(){
   $('p-hp-fill').style.width=(playerHP/PLAYER_MAX_HP*100)+'%';
   $('p-hp-txt').textContent=`HP ${playerHP}/${PLAYER_MAX_HP}`;
   $('power-indicator').style.display=powerPotionActive?'block':'none';
-  $('p-shield-fill').style.width=Math.min(100,playerShield)+'%';
+  playerShield=Math.min(playerShield,PLAYER_MAX_SHIELD);
+  $('p-shield-fill').style.width=(playerShield/PLAYER_MAX_SHIELD*100)+'%';
   $('p-shield-txt').textContent=playerShield>0?`🛡 ${playerShield}`:'';
   $('e-hp-fill').style.width=(enemyHP/enemyMaxHP*100)+'%';
   $('e-hp-txt').textContent=`${enemyHP}/${enemyMaxHP}`;
@@ -813,7 +816,7 @@ function applySlotReveal(idx){
     shake=Math.min(val/10,4);
     spawnSlashProjectile(val);
   } else if(ic==='shield'){
-    playerShield+=val;
+    playerShield=Math.min(playerShield+val,PLAYER_MAX_SHIELD);
     shieldAnims.push({life:1,x:W()/2,y:H()*.92});
   } else if(ic==='gold'){
     val=Math.floor(val*perfectStreakMultiplier); gold+=val;
@@ -1064,14 +1067,14 @@ function applyTap(vi, rating){
     tapValues[icon]+=val;
     if(rating==='PERFECT') shake=Math.min(Math.max(val,2),3);
     if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); spawnSlashProjectile(val); play('sword',vol); }
-    else if(icon==='shield'){ playerShield+=val; updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); play('shield',vol); }
+    else if(icon==='shield'){ playerShield=Math.min(playerShield+val,PLAYER_MAX_SHIELD); updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); play('shield',vol); }
     else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin',vol); }
   } else if(vi>0){
     let ab={PERFECT:5,GREAT:2,COOL:1}[rating];
     if(powerPotionActive) ab+=10;
     if(rating==='PERFECT') shake=Math.min(ab/3,2);
     if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); spawnSlashProjectile(ab); }
-    if(baseValues.shield>0){ tapValues.shield+=ab; playerShield+=ab; shieldAnims.push({life:1,x:W()/2,y:H()*.92}); }
+    if(baseValues.shield>0){ tapValues.shield+=ab; playerShield=Math.min(playerShield+ab,PLAYER_MAX_SHIELD); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); }
     if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating); }
     if(baseValues.bow>0){ bowCharge+=ab; if(bowCharge>getBowMaxCharge()) bowCharge=0; }
     updateUI(); play('snare',vol*0.5);
@@ -1260,7 +1263,7 @@ function endGame(){
 }
 
 function resetGame(){
-  playerHP=100; playerShield=0; gold=0; PLAYER_MAX_HP=100;
+  playerHP=100; playerShield=0; gold=0; PLAYER_MAX_HP=100; PLAYER_MAX_SHIELD=100;
   upgradeCounts={sword:0,shield:0,hp:0,bow:0};
   passiveSlots=[{id:'sword',icon:'⚔',name:'Sword',cost:0},{id:'shield',icon:'🛡',name:'Shield',cost:0},{id:'gold',icon:'💰',name:'Coin',cost:0}];
   maxUsableSlots=3; usableSlots=[null,null,null]; powerPotionActive=false; bowUnlocked=false; rerollCount=0;
@@ -1299,6 +1302,7 @@ gameWrap.addEventListener('pointerdown',e=>{
   // Streak 3 tutorial: tap to continue → start next roll
   if(streak3TutorialActive){
     streak3TutorialActive=false;
+    streakActive=false;
     $('tutorial-text').style.display='none';
     showingResults=false;
     startSlotPhase();
@@ -1307,6 +1311,7 @@ gameWrap.addEventListener('pointerdown',e=>{
   // Tutorial step 1: tap to continue after streak message
   if(tutorialActive&&tutorialStep===1&&tutorialPaused){
     tutorialPaused=false; tutorialActive=false; tutorialDone=true;
+    streakActive=false; // prevent updateStreak from also triggering startSlotPhase
     $('tutorial-text').style.display='none';
     showingResults=false; $('hit-fb').style.opacity=0;
     startSlotPhase();
