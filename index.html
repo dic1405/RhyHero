@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <link href="https://fonts.cdnfonts.com/css/bytebounce" rel="stylesheet">
@@ -52,34 +51,33 @@ canvas{display:block;width:100%;height:100%}
 #pause-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
 
 #shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:flex-start}
-#shop-screen h2{font:40px ‘ByteBounce’;color:#fff;margin:16px 0 0 0;flex-shrink:0}
-#shop-gold-display{font:28px ‘ByteBounce’;color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
+#shop-screen h2{font:40px 'ByteBounce';color:#fff;margin:16px 0 0 0;flex-shrink:0}
+#shop-gold-display{font:28px 'ByteBounce';color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
 .shop-offers{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:14px 10px 10px;margin-bottom:6px;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center}
 .shop-grid{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
 .shop-card{background:rgba(255,255,255,0.04);border:1.5px solid #ffffff22;border-radius:6px;padding:10px;width:120px;text-align:center;cursor:pointer;transition:all .2s}
 .shop-card:hover{border-color:#00ffaa;background:rgba(0,255,170,0.05)}
 .shop-card.sold{opacity:0.3;pointer-events:none}
 .shop-card .icon{font-size:28px;margin-bottom:4px}
-.shop-card .name{font:20px ‘ByteBounce’;color:#fff;margin-bottom:3px}
-.shop-card .desc{font:18px ‘ByteBounce’;color:#ccc;margin-bottom:6px;min-height:24px}
-.shop-card .cost{font:22px ‘ByteBounce’;color:#ffaa00}
-#reroll-btn{font:20px ‘ByteBounce’;padding:8px 20px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;margin:0}
+.shop-card .name{font:20px 'ByteBounce';color:#fff;margin-bottom:3px}
+.shop-card .desc{font:18px 'ByteBounce';color:#ccc;margin-bottom:6px;min-height:24px}
+.shop-card .cost{font:22px 'ByteBounce';color:#ffaa00}
+#reroll-btn{font:20px 'ByteBounce';padding:8px 20px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;margin:0}
 .shop-inv{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:12px 14px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px}
 .inv-section{width:100%;margin:0}
-.inv-label{font:18px ‘ByteBounce’;color:#aaa;margin-bottom:4px;text-align:left}
+.inv-label{font:18px 'ByteBounce';color:#aaa;margin-bottom:4px;text-align:left}
 .inv-slots{display:flex;gap:5px}
 .inv-slot{width:36px;height:36px;border:1px solid #ffffff22;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.02)}
 .inv-slot.filled{border-color:#00ffaa44}
-.inv-slot.filled[style*=‘cursor’]{border-color:#ffaa0044}
-.inv-slot.filled[style*=‘cursor’]:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
+.inv-slot.filled[style*='cursor']{border-color:#ffaa0044}
+.inv-slot.filled[style*='cursor']:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
 .shop-bottom{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:20px;width:100%}
-#shop-continue{font:28px ‘ByteBounce’;padding:14px 50px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
+#shop-continue{font:28px 'ByteBounce';padding:14px 50px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
 #usable-bar{position:absolute;bottom:9%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
 .usable-btn{width:32px;height:32px;border:1px solid #ffffff22;border-radius:4px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;color:#fff;transition:all .2s}
 .usable-btn:hover{border-color:#00ffaa}
 .usable-btn.empty{opacity:0.2;pointer-events:none}
 </style>
-
 </head>
 <body>
 <div id="game-wrap">
@@ -824,13 +822,6 @@ function updateSlots(dt){
     for(let i=0;i<activeSlots;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(slotTimer<=0){
       if(enemyHP<=0){ setTimeout(()=>advanceEnemy(),1200); slotPhase='idle'; }
-      else if(streakCount>=3&&!streak3TutorialDone){
-        streak3TutorialActive=true; streak3TutorialDone=true;
-        slotPhase='idle';
-        $('tutorial-text').style.display='block';
-        $('tutorial-text').textContent='High streak will hide the glyph. You need to hear and feel the rhythm to tap correctly!';
-        $('hit-fb').style.opacity=0;
-      }
       else startGlyphPhase();
     }
   }
@@ -1102,6 +1093,14 @@ function finishPlaying(){
   if(noMiss){
     streakCount++; streakActive=true; streakTextTimer=BEAT*1000;
     sfx.streak(streakCount);
+    // Streak 3 tutorial: pause after completing streak 2
+    if(streakCount===2&&!streak3TutorialDone){
+      streak3TutorialActive=true; streak3TutorialDone=true;
+      $('tutorial-text').style.display='block';
+      $('tutorial-text').textContent='High streak will hide the glyph. You need to hear and feel the rhythm to tap correctly!';
+      $('hit-fb').style.opacity=0;
+      return;
+    }
     const fb=$('hit-fb');
     if(isAllPerfect){
       perfectStreakCount++; perfectStreakMultiplier=Math.pow(1.1, perfectStreakCount);
@@ -1254,11 +1253,12 @@ addEventListener('keydown',e=>{
 });
 gameWrap.addEventListener('pointerdown',e=>{
   if(e.target.id==='pause-btn') return;
-  // Streak 3 tutorial: tap to continue
+  // Streak 3 tutorial: tap to continue → start next roll
   if(streak3TutorialActive){
     streak3TutorialActive=false;
     $('tutorial-text').style.display='none';
-    startGlyphPhase();
+    showingResults=false;
+    startSlotPhase();
     return;
   }
   // Tutorial step 1: tap to continue after streak message
@@ -1599,6 +1599,5 @@ function update(ts){
 }
 requestAnimationFrame(update);
 </script>
-
 </body>
 </html>
