@@ -50,20 +50,27 @@ canvas{display:block;width:100%;height:100%}
 #pause-btn{position:absolute;top:12px;left:12px;font-size:20px;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid #ffffff22;color:#ffffff88;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;line-height:1}
 #pause-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
 
-#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:flex-start}
-#shop-screen h2{font:40px 'ByteBounce';color:#fff;margin:16px 0 0 0;flex-shrink:0}
+#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:space-between}
+#shop-screen h2{font:40px 'ByteBounce';color:#fff;margin:20px 0 0 0;flex-shrink:0}
 #shop-gold-display{font:28px 'ByteBounce';color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
-.shop-offers{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:14px 10px 10px;margin-bottom:6px;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center}
-.shop-grid{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
-.shop-card{background:rgba(255,255,255,0.04);border:1.5px solid #ffffff22;border-radius:6px;padding:10px;width:120px;text-align:center;cursor:pointer;transition:all .2s}
-.shop-card:hover{border-color:#00ffaa;background:rgba(0,255,170,0.05)}
+.shop-middle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;overflow-y:auto}
+.shop-offers{width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;align-items:center;margin-bottom:20px}
+.shop-grid{display:flex;flex-direction:column;gap:10px}
+.shop-card{background:rgba(255,255,255,0.06);border:1.5px solid #ffffff15;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;transition:all .2s}
+.shop-card:hover{}
 .shop-card.sold{opacity:0.3;pointer-events:none}
-.shop-card .icon{font-size:28px;margin-bottom:4px}
-.shop-card .name{font:20px 'ByteBounce';color:#fff;margin-bottom:3px}
-.shop-card .desc{font:18px 'ByteBounce';color:#ccc;margin-bottom:6px;min-height:24px}
-.shop-card .cost{font:22px 'ByteBounce';color:#ffaa00}
-#reroll-btn{font:20px 'ByteBounce';padding:8px 20px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;margin:0}
-.shop-inv{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:12px 14px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px}
+.shop-card .icon{font-size:36px;width:50px;height:50px;background:rgba(255,255,255,0.05);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.shop-card .card-info{flex:1;text-align:left}
+.shop-card .name{font:20px 'ByteBounce';color:#fff;margin-bottom:2px}
+.shop-card .desc{font:16px 'ByteBounce';color:#999;line-height:1.3}
+.shop-card .cost{font:20px 'ByteBounce';color:#ffaa00;flex-shrink:0;white-space:nowrap}
+.buy-btn{background:0 0;border:1.5px solid #ffaa0066;border-radius:4px;padding:6px 12px;cursor:pointer;font:20px 'ByteBounce';color:#ffaa00;transition:all .2s}
+.buy-btn:hover{border-color:#ffaa00;background:rgba(255,170,0,0.1)}
+.buy-btn:disabled{opacity:0.3;cursor:default;border-color:#ffffff22}
+.sold-txt{color:#555;font:20px 'ByteBounce'}
+.shop-card.sold .cost{color:#555}
+#reroll-btn{font:20px 'ByteBounce';padding:6px 16px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;align-self:center}
+.shop-inv{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:12px 14px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;margin-top:4px}
 .inv-section{width:100%;margin:0}
 .inv-label{font:18px 'ByteBounce';color:#aaa;margin-bottom:4px;text-align:left}
 .inv-slots{display:flex;gap:5px}
@@ -71,8 +78,8 @@ canvas{display:block;width:100%;height:100%}
 .inv-slot.filled{border-color:#00ffaa44}
 .inv-slot.filled[style*='cursor']{border-color:#ffaa0044}
 .inv-slot.filled[style*='cursor']:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
-.shop-bottom{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:20px;width:100%}
-#shop-continue{font:28px 'ByteBounce';padding:14px 50px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
+.shop-bottom{display:flex;flex-direction:column;align-items:center;padding-bottom:20px;width:100%;flex-shrink:0}
+#shop-continue{font:28px 'ByteBounce';padding:12px 40px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
 #usable-bar{position:absolute;bottom:9%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
 .usable-btn{width:32px;height:32px;border:1px solid #ffffff22;border-radius:4px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;color:#fff;transition:all .2s}
 .usable-btn:hover{border-color:#00ffaa}
@@ -91,7 +98,7 @@ canvas{display:block;width:100%;height:100%}
   </div>
   <div id="player-section">
     <div id="p-row">
-      <div id="p-hp-txt">HP 100/100</div>
+      <div id="p-hp-txt">HP 100/100</div><div id="power-indicator" style="font:22px ByteBounce;color:#ffe066;text-shadow:0 0 8px #ffaa0066;display:none">⚡+10</div>
       <div id="gold-display"></div>
     </div>
     <div id="p-hp-wrap" class="bar-wrap"><div id="p-hp-fill" class="bar-fill"></div></div>
@@ -111,10 +118,8 @@ canvas{display:block;width:100%;height:100%}
   </div>
   <div id="start-screen" class="overlay">
     <h1>RHYTHM HERO</h1>
-    <p class="sub">Slot &amp; Dagger</p>
     <div class="ctrls">
-      Watch the slots roll on beat<br>
-      Then press <span>SPACE</span> or <span>TAP</span> at each intersection
+      Watch the slots roll on rhythm,<br>then Tap following the rhythm
     </div>
     <div id="load-wrap" style="width:60%;max-width:200px;margin-bottom:20px">
       <div style="font:18px ByteBounce;color:#556;margin-bottom:4px;text-align:center" id="load-text">Loading assets...</div>
@@ -132,6 +137,7 @@ canvas{display:block;width:100%;height:100%}
 
   <div id="shop-screen" class="overlay">
     <h2>SHOP</h2>
+    <div class="shop-middle">
     <div id="shop-gold-display">💰 0</div>
     <div class="shop-offers">
       <div class="shop-grid" id="shop-grid"></div>
@@ -147,6 +153,7 @@ canvas{display:block;width:100%;height:100%}
         <div class="inv-slots" id="inv-usables"></div>
       </div>
       <div id="sell-bar" style="display:none;align-items:center;justify-content:center;gap:6px"><span id="sell-info" style="font:20px ByteBounce;color:#ff9999"></span><button id="sell-btn" onclick="confirmSell()" style="font:20px ByteBounce;padding:6px 16px;background:0 0;border:1.5px solid #ff3366;color:#ff3366;cursor:pointer;border-radius:3px">SELL</button><button onclick="deselectItem()" style="font:20px ByteBounce;padding:6px 12px;background:0 0;border:1.5px solid #666;color:#888;cursor:pointer;border-radius:3px">✕</button></div>
+    </div>
     </div>
     <div class="shop-bottom">
       <div id="boss-warning" style="display:none;font:28px ByteBounce;color:#ff3366;margin-bottom:12px;text-shadow:0 0 10px #ff336666">⚠ BOSS LEVEL ⚠</div>
@@ -257,6 +264,7 @@ const TEMPO_BLOCKS = [
 ];
 function isBoss(lvl){ return lvl%5===0; }
 function getTempo(lvl){
+  if(lvl===1) return 70; // tutorial fixed tempo
   if(lvl>40) return 200;
   const block=Math.floor((lvl-1)/5), pos=(lvl-1)%5;
   if(block>=TEMPO_BLOCKS.length) return 200;
@@ -428,9 +436,12 @@ function renderShop(){
     const sold=shopSold[i];
     const card=document.createElement('div');
     card.className='shop-card'+(sold?' sold':'');
-    card.innerHTML='<div class="icon">'+item.icon+'</div><div class="name">'+item.name+'</div><div class="desc">'+item.desc.replace(/\\n/g,'<br>')+'</div><div class="cost">'+(sold?'SOLD':'💰 '+cost)+'</div>';
-    if(!sold&&can) card.onclick=()=>buyItem(i);
-    else if(!sold) card.style.opacity='0.5';
+    const costBtn=sold?'<div class="cost sold-txt">SOLD</div>':'<button class="cost buy-btn"'+(can?'':' disabled')+'>💰 '+cost+'</button>';
+    card.innerHTML='<div class="icon">'+item.icon+'</div><div class="card-info"><div class="name">'+item.name+'</div><div class="desc">'+item.desc.replace(/\\n/g,' ')+'</div></div>'+costBtn;
+    if(!sold&&can){
+      const btn=card.querySelector('.buy-btn');
+      if(btn) btn.onclick=(e)=>{e.stopPropagation();buyItem(i);};
+    }
     grid.appendChild(card);
   });
   $('reroll-btn').textContent='🎲 Reroll ('+getRerollCost()+'g)';
@@ -647,6 +658,7 @@ function showFB(rating){
 function updateUI(){
   $('p-hp-fill').style.width=(playerHP/PLAYER_MAX_HP*100)+'%';
   $('p-hp-txt').textContent=`HP ${playerHP}/${PLAYER_MAX_HP}`;
+  $('power-indicator').style.display=powerPotionActive?'block':'none';
   $('p-shield-fill').style.width=Math.min(100,playerShield)+'%';
   $('p-shield-txt').textContent=playerShield>0?`🛡 ${playerShield}`:'';
   $('e-hp-fill').style.width=(enemyHP/enemyMaxHP*100)+'%';
@@ -878,7 +890,7 @@ function buildGlyph(edgeMults, cx, cy){
   const gameEdges=n-1;
   const gameW=edgeMults.slice(1).reduce((a,b)=>a+b,0);
   const maxW=W()-50;
-  const maxVH=H()*0.38;
+  const maxVH=H()*0.46;
   const baseUnit=280*(3/Math.max(3,activeSlots));
   const estH=gameW*Math.cos(baseAngle)*(shapeType===2?.6:1);
   const estV=gameW*Math.sin(baseAngle)+1;
@@ -949,7 +961,7 @@ function startGlyphPhase(){
   if(enemyNum===1&&!tutorialDone){ tutorialActive=true; tutorialStep=0; }
   slotPhase='playing';
   const em=buildRhythmFromSlots();
-  const g=buildGlyph(em, W()/2, H()*0.55);
+  const g=buildGlyph(em, W()/2, H()*0.62);
   glyphVerts=g.verts; glyphEdges=g.edges; edgeDurs=g.durs;
   totalInts=g.verts.length;
   dotSeg=0; dotProg=0; endPauseTimer=0;
