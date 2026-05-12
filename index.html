@@ -51,10 +51,11 @@ canvas{display:block;width:100%;height:100%}
 #pause-btn{position:absolute;top:12px;left:12px;font-size:20px;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid #ffffff22;color:#ffffff88;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;line-height:1}
 #pause-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
 
-#shop-screen{display:none;flex-direction:column;align-items:center;padding:20px 15px;overflow-y:auto;background:#1c1c26 !important}
-#shop-screen h2{font:40px ‘ByteBounce’;color:#fff;margin-bottom:8px}
-#shop-gold-display{font:28px ‘ByteBounce’;color:#ffaa00;margin-bottom:12px}
-.shop-grid{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;justify-content:center}
+#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:flex-start}
+#shop-screen h2{font:40px ‘ByteBounce’;color:#fff;margin:16px 0 0 0;flex-shrink:0}
+#shop-gold-display{font:28px ‘ByteBounce’;color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
+.shop-offers{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:14px 10px 10px;margin-bottom:6px;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center}
+.shop-grid{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
 .shop-card{background:rgba(255,255,255,0.04);border:1.5px solid #ffffff22;border-radius:6px;padding:10px;width:120px;text-align:center;cursor:pointer;transition:all .2s}
 .shop-card:hover{border-color:#00ffaa;background:rgba(0,255,170,0.05)}
 .shop-card.sold{opacity:0.3;pointer-events:none}
@@ -62,15 +63,17 @@ canvas{display:block;width:100%;height:100%}
 .shop-card .name{font:20px ‘ByteBounce’;color:#fff;margin-bottom:3px}
 .shop-card .desc{font:18px ‘ByteBounce’;color:#ccc;margin-bottom:6px;min-height:24px}
 .shop-card .cost{font:22px ‘ByteBounce’;color:#ffaa00}
-#reroll-btn{font:20px ‘ByteBounce’;padding:8px 20px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;margin-bottom:12px}
-.inv-section{width:100%;max-width:380px;margin-bottom:10px}
+#reroll-btn{font:20px ‘ByteBounce’;padding:8px 20px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;margin:0}
+.shop-inv{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:12px 14px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px}
+.inv-section{width:100%;margin:0}
 .inv-label{font:18px ‘ByteBounce’;color:#aaa;margin-bottom:4px;text-align:left}
 .inv-slots{display:flex;gap:5px}
 .inv-slot{width:36px;height:36px;border:1px solid #ffffff22;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.02)}
 .inv-slot.filled{border-color:#00ffaa44}
 .inv-slot.filled[style*=‘cursor’]{border-color:#ffaa0044}
 .inv-slot.filled[style*=‘cursor’]:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
-#shop-continue{font:28px ‘ByteBounce’;padding:12px 40px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:10px}
+.shop-bottom{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:20px;width:100%}
+#shop-continue{font:28px ‘ByteBounce’;padding:14px 50px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
 #usable-bar{position:absolute;bottom:9%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
 .usable-btn{width:32px;height:32px;border:1px solid #ffffff22;border-radius:4px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;color:#fff;transition:all .2s}
 .usable-btn:hover{border-color:#00ffaa}
@@ -132,19 +135,25 @@ canvas{display:block;width:100%;height:100%}
   <div id="shop-screen" class="overlay">
     <h2>SHOP</h2>
     <div id="shop-gold-display">💰 0</div>
-    <div class="shop-grid" id="shop-grid"></div>
-    <button id="reroll-btn" onclick="rerollShop()">🎲 Reroll (10g)</button>
-    <div class="inv-section">
-      <div class="inv-label">SLOT INVENTORY</div>
-      <div class="inv-slots" id="inv-passives"></div>
+    <div class="shop-offers">
+      <div class="shop-grid" id="shop-grid"></div>
+      <button id="reroll-btn" onclick="rerollShop()">🎲 Reroll (10g)</button>
     </div>
-    <div class="inv-section">
-      <div class="inv-label">USABLES</div>
-      <div class="inv-slots" id="inv-usables"></div>
+    <div class="shop-inv">
+      <div class="inv-section">
+        <div class="inv-label">SLOT INVENTORY</div>
+        <div class="inv-slots" id="inv-passives"></div>
+      </div>
+      <div class="inv-section">
+        <div class="inv-label">USABLES</div>
+        <div class="inv-slots" id="inv-usables"></div>
+      </div>
+      <div id="sell-bar" style="display:none;align-items:center;justify-content:center;gap:6px"><span id="sell-info" style="font:20px ByteBounce;color:#ff9999"></span><button id="sell-btn" onclick="confirmSell()" style="font:20px ByteBounce;padding:6px 16px;background:0 0;border:1.5px solid #ff3366;color:#ff3366;cursor:pointer;border-radius:3px">SELL</button><button onclick="deselectItem()" style="font:20px ByteBounce;padding:6px 12px;background:0 0;border:1.5px solid #666;color:#888;cursor:pointer;border-radius:3px">✕</button></div>
     </div>
-    <div id="sell-bar" style="display:none;margin-bottom:8px"><span id="sell-info" style="font:20px ByteBounce;color:#ff9999;margin-right:8px"></span><button id="sell-btn" onclick="confirmSell()" style="font:20px ByteBounce;padding:6px 16px;background:0 0;border:1.5px solid #ff3366;color:#ff3366;cursor:pointer;border-radius:3px">SELL</button><button onclick="deselectItem()" style="font:20px ByteBounce;padding:6px 12px;background:0 0;border:1.5px solid #666;color:#888;cursor:pointer;border-radius:3px;margin-left:5px">✕</button></div>
-    <div id="boss-warning" style="display:none;font:28px ByteBounce;color:#ff3366;margin-bottom:10px;text-shadow:0 0 10px #ff336666">⚠ BOSS LEVEL ⚠</div>
-    <button id="shop-continue" onclick="closeShop()">CONTINUE →</button>
+    <div class="shop-bottom">
+      <div id="boss-warning" style="display:none;font:28px ByteBounce;color:#ff3366;margin-bottom:12px;text-shadow:0 0 10px #ff336666">⚠ BOSS LEVEL ⚠</div>
+      <button id="shop-continue" onclick="closeShop()">CONTINUE →</button>
+    </div>
   </div>
   <div id="usable-bar">
     <button class="usable-btn empty" id="use0" onclick="useItem(0)"></button>
@@ -468,8 +477,6 @@ function selectItem(type, idx){
   const refund=Math.floor(item.cost/2);
   $('sell-info').textContent=item.name+' → 💰'+refund;
   $('sell-bar').style.display='flex';
-  $('sell-bar').style.alignItems='center';
-  $('sell-bar').style.justifyContent='center';
   renderShop(); // re-render to highlight
 }
 
