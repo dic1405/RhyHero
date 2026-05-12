@@ -14,7 +14,6 @@
        url('https://fonts.cdnfonts.com/s/104826/ByteBounce.woff') format('woff');
   font-display: swap;
 }
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 html{height:100%;overflow:hidden}
 body{background:#1c1c26;color:#e0e0e0;font-family:'ByteBounce',sans-serif;overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-user-select:none;touch-action:manipulation;display:flex;justify-content:center;align-items:stretch}
@@ -94,7 +93,7 @@ canvas{display:block;width:100%;height:100%}
 .inv-slot.filled[style*='cursor']:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
 .shop-bottom{display:flex;flex-direction:column;align-items:center;padding-bottom:20px;width:100%;flex-shrink:0}
 #shop-continue{font:28px 'ByteBounce';padding:12px 40px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
-#usable-bar{position:absolute;bottom:9%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
+#usable-bar{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
 .usable-btn{width:32px;height:32px;border:1px solid #ffffff22;border-radius:4px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;color:#fff;transition:all .2s}
 .usable-btn:hover{border-color:#00ffaa}
 .usable-btn.empty{opacity:0.2;pointer-events:none}
@@ -229,13 +228,6 @@ function play(name, vol=1, pitch=1){
   s.buffer=b; g.gain.value=vol*getSfxVolMultiplier(); s.playbackRate.value=pitch*Math.pow(2,perfectStreakCount*2/12);
   s.connect(g); g.connect(ac.destination); s.start(0);
 }
-
-function preloadAudio(){
-  ensureAC();
-  ['Slot','Sword','Shield','Coin','Snare'].forEach(f=>loadAudio(f.toLowerCase(), f+'.wav'));
-  loadAudio('bow_charge','Bow_charge.wav'); loadAudio('bow_shoot','Bow_Shoot.wav');
-}
-
 
 const sfx = {
   slotLand(icon){ if(icon==='bow') play('bow_shoot'); else play(icon==='gold'?'coin':icon) },
@@ -626,8 +618,6 @@ function getShieldBase(){ return Math.floor(SINGLE_BASE.shield*(1+upgradeCounts.
 function getSwordTap(rating){ return (TAP_BONUS.sword[rating]||0)+upgradeCounts.sword*2; }
 function getShieldTap(rating){ return (TAP_BONUS.shield[rating]||0)+upgradeCounts.shield*2; }
 
-
-
 // ── State ──
 let playerHP=PLAYER_MAX_HP, playerShield=0, gold=0;
 let enemyMaxHP=250, enemyHP=250, enemyNum=1;
@@ -832,7 +822,6 @@ function startSlotPhase(){
   // Bow match bonuses
   bowFShotCount=0;
   // bowCharge persists across rolls — only resets when H/HH appears after shooting
-
 
   // Build reveal schedule
   const edges=[1]; let vp=1;
@@ -1247,7 +1236,7 @@ function finishPlaying(){
     }
   } else {
     streakCount=0; streakActive=false; perfectStreakCount=0; perfectStreakMultiplier=1.0;
-    stopBGM(); bgmPending=false; bgm2Pending=false; bgmPending=false;
+    stopBGM(); bgmPending=false; bgm2Pending=false;
     setTimeout(()=>{ showingResults=false; $('result-display').textContent=''; enemyTurn(); },800);
   }
 }
@@ -1336,7 +1325,6 @@ function drawEnemyTurn(){
   }
   ctx.globalAlpha=1;
 }
-
 
 function advanceEnemy(){
   stopBGM(); bgmPending=false; bgm2Pending=false;
