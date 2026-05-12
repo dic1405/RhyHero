@@ -175,7 +175,7 @@ const ASSET_BASE = 'https://raw.githubusercontent.com/dic1405/RhyHero/main/';
 function tone(f,d,v=.12,t='sine'){
   ensureAC();
   const o=ac.createOscillator(), g=ac.createGain();
-  o.type=t; o.frequency.value=f;
+  o.type=t; o.frequency.value=f*Math.pow(2,perfectStreakCount*2/12);
   g.gain.setValueAtTime(v, ac.currentTime);
   g.gain.exponentialRampToValueAtTime(.001, ac.currentTime+d);
   o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+d);
@@ -193,7 +193,7 @@ function play(name, vol=1, pitch=1){
   ensureAC();
   const b = audioBuffers[name]; if(!b) return;
   const s=ac.createBufferSource(), g=ac.createGain();
-  s.buffer=b; g.gain.value=vol; s.playbackRate.value=pitch;
+  s.buffer=b; g.gain.value=vol; s.playbackRate.value=pitch*Math.pow(2,perfectStreakCount*2/12);
   s.connect(g); g.connect(ac.destination); s.start(0);
 }
 
@@ -677,6 +677,34 @@ function startSlotPhase(){
     if(ic==='bow'){ const r=Math.random(); return r<0.25?'F':r<0.75?'HH':'H'; }
     return rollBeat();
   });
+  // Level 1: fixed clean patterns (no overlapping lines)
+  if(enemyNum===1){
+    const swordCount=slotIcons.filter(ic=>ic==='sword').length;
+    if(swordCount>=3){
+      // All swords: F,F,F — clean
+    } else if(swordCount===2){
+      // 2F + 1HH
+      for(let i=0;i<activeSlots;i++) if(slotIcons[i]!=='sword'){ slotBeats[i]='HH'; break; }
+    } else {
+      // Pick pattern: 2F+1HH or 1F+2H
+      const pattern=Math.random()<0.5?'A':'B';
+      const nonSwords=[];
+      for(let i=0;i<activeSlots;i++) if(slotIcons[i]!=='sword') nonSwords.push(i);
+      if(pattern==='A'){
+        // 2F + 1HH: non-swords get F and HH to reach total 2F+1HH
+        const needF=2-swordCount;
+        for(let j=0;j<nonSwords.length;j++){
+          slotBeats[nonSwords[j]]=j<needF?'F':'HH';
+        }
+      } else {
+        // 1F + 2H: non-swords get F and H to reach total 1F+2H
+        const needF=1-swordCount;
+        for(let j=0;j<nonSwords.length;j++){
+          slotBeats[nonSwords[j]]=j<Math.max(0,needF)?'F':'H';
+        }
+      }
+    }
+  }
   slotRevealedIcons=new Array(activeSlots).fill(false);
   slotPhase='rolling'; slotRollAnim=0;
   phaseActive=false; showingResults=false;
@@ -1094,7 +1122,7 @@ function finishPlaying(){
     streakCount++; streakActive=true; streakTextTimer=BEAT*1000;
     sfx.streak(streakCount);
     // Streak 3 tutorial: pause after completing streak 2
-    if(streakCount===2&&!streak3TutorialDone){
+    if(streakCount===3&&!streak3TutorialDone){
       streak3TutorialActive=true; streak3TutorialDone=true;
       $('tutorial-text').style.display='block';
       $('tutorial-text').textContent='High streak will hide the glyph. You need to hear and feel the rhythm to tap correctly!';
