@@ -237,7 +237,7 @@ const sfx = {
   tick(){ play('snare',0.5) },
   miss(){ tone(150,.2,.1,'sawtooth') },
   enemyHit(){ tone(100,.3,.15,'sawtooth') },
-  streak(streak=0){ const p=Math.pow(2,(streak*2)/12); play('snare',1.2,p); },
+  streak(streak=0,perfect=false){ play(perfect?'streak_perfect':'streak_greatcool',1.0); },
   nextEnemy(){ tone(600,.15,.12); setTimeout(()=>tone(800,.15,.12),120); setTimeout(()=>tone(1000,.2,.1),240) },
   defeat(){ [0,150,300].forEach((d,i)=>setTimeout(()=>tone(300-i*80,.4,.12,'sawtooth'),d)) },
 };
@@ -1317,7 +1317,7 @@ function finishPlaying(){
 
   if(noMiss){
     streakCount++; streakActive=true; streakTextTimer=BEAT*1000;
-    sfx.streak(streakCount);
+    sfx.streak(streakCount,isAllPerfect);
     // BGM: mark pending at streak 3, will start at first glyph dot
     if(streakCount>=3&&!bgmPlaying) bgmPending=true;
     if(bgmPlaying) updateBGMVolume();
@@ -1652,7 +1652,9 @@ $('resume-btn').addEventListener('click',togglePause);
     ['penclick','PenClick.wav'],
     ['mutebeat','MuteBeat.wav'],
     ['rhythmbust','RhythmBust.wav'],
-    ['rhythmbust_shoot','RhythmBustShoot.mp3']
+    ['rhythmbust_shoot','RhythmBustShoot.mp3'],
+    ['streak_perfect','Streak_perfect.wav'],
+    ['streak_greatcool','Streak_greatcool.wav']
   ];
   const imageNames=['sword','shield','gold','bow'];
   const total=audioFiles.length+imageNames.length;
