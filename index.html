@@ -637,6 +637,7 @@ function showLabel(text,color,dur=600){
 }
 
 function showFB(rating){
+  if(tutorialPaused) return; // don't show accuracy during tutorial
   const fb=$('hit-fb');
   const c={PERFECT:'#ffaa00',GREAT:'#44aaff',COOL:'#aaaa44',MISS:'#ff3366'};
   fb.textContent=rating; fb.style.color=c[rating]; fb.style.fontSize='18px';
@@ -828,6 +829,7 @@ function updateSlots(dt){
         slotPhase='idle';
         $('tutorial-text').style.display='block';
         $('tutorial-text').textContent='High streak will hide the glyph. You need to hear and feel the rhythm to tap correctly!';
+        $('hit-fb').style.opacity=0;
       }
       else startGlyphPhase();
     }
@@ -1086,9 +1088,7 @@ function finishPlaying(){
     sfx.streak(streakCount);
     $('tutorial-text').style.display='block';
     $('tutorial-text').textContent='Tap all dots to roll again and skip the enemy\'s attack! Tap to continue.';
-    const fb=$('hit-fb');
-    fb.textContent='STREAK 1'; fb.style.color='#00ffaa'; fb.style.fontSize='28px';
-    fb.style.opacity=1; fb.style.transform='translate(-50%,-50%) scale(1.3)';
+    $('hit-fb').style.opacity=0;
     return;
   }
   phaseActive=false; showingResults=true;
@@ -1551,6 +1551,7 @@ function update(ts){
               tutorialPaused=true;
               $('tutorial-text').style.display='block';
               $('tutorial-text').textContent='Tap the empty space when the dot reaches the intersection';
+              $('hit-fb').style.opacity=0;
             }
           }
         }
