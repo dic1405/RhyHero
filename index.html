@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <link rel="preload" href="https://raw.githubusercontent.com/dic1405/RhyHero/main/ByteBounce.woff" as="font" type="font/woff" crossorigin>
@@ -57,10 +56,10 @@ canvas{display:block;width:100%;height:100%}
 #pause-btn{position:absolute;top:12px;left:12px;font-size:20px;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid #ffffff22;color:#ffffff88;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;line-height:1}
 #pause-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
 
-#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:space-between;font-family:‘ByteBounce’,sans-serif !important}
-#shop-screen *{font-family:‘ByteBounce’,sans-serif !important}
-#shop-screen h2{font:40px ‘ByteBounce’;color:#fff;margin:20px 0 0 0;flex-shrink:0}
-#shop-gold-display{font:28px ‘ByteBounce’;color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
+#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:space-between;font-family:'ByteBounce',sans-serif !important}
+#shop-screen *{font-family:'ByteBounce',sans-serif !important}
+#shop-screen h2{font:40px 'ByteBounce';color:#fff;margin:20px 0 0 0;flex-shrink:0}
+#shop-gold-display{font:28px 'ByteBounce';color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
 .shop-middle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;overflow-y:auto}
 .shop-offers{width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;align-items:center;margin-bottom:20px}
 .shop-grid{display:flex;flex-direction:column;gap:10px}
@@ -69,37 +68,36 @@ canvas{display:block;width:100%;height:100%}
 .shop-card.sold{opacity:0.3;pointer-events:none}
 .shop-card .icon{font-size:36px;width:50px;height:50px;background:rgba(255,255,255,0.05);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .shop-card .card-info{flex:1;text-align:left}
-.shop-card .name{font:20px ‘ByteBounce’;color:#fff;margin-bottom:2px}
-.shop-card .desc{font:16px ‘ByteBounce’;color:#999;line-height:1.3}
-.shop-card .cost{font:20px ‘ByteBounce’;color:#ffaa00;flex-shrink:0;white-space:nowrap}
-.buy-btn{background:0 0;border:1.5px solid #ffaa0066;border-radius:4px;padding:6px 12px;cursor:pointer;font:20px ‘ByteBounce’;color:#ffaa00;transition:all .2s}
+.shop-card .name{font:20px 'ByteBounce';color:#fff;margin-bottom:2px}
+.shop-card .desc{font:16px 'ByteBounce';color:#999;line-height:1.3}
+.shop-card .cost{font:20px 'ByteBounce';color:#ffaa00;flex-shrink:0;white-space:nowrap}
+.buy-btn{background:0 0;border:1.5px solid #ffaa0066;border-radius:4px;padding:6px 12px;cursor:pointer;font:20px 'ByteBounce';color:#ffaa00;transition:all .2s}
 .buy-btn:hover{border-color:#ffaa00;background:rgba(255,170,0,0.1)}
 .buy-btn:disabled{opacity:0.3;cursor:default;border-color:#ffffff22}
-.sold-txt{color:#555;font:20px ‘ByteBounce’}
+.sold-txt{color:#555;font:20px 'ByteBounce'}
 .shop-card.sold .cost{color:#555}
-#reroll-btn{font:20px ‘ByteBounce’;padding:6px 16px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;align-self:center}
+#reroll-btn{font:20px 'ByteBounce';padding:6px 16px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;align-self:center}
 .shop-bars{width:100%;display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
 .shop-bar-row{display:flex;align-items:center;gap:8px}
-.shop-bar-label{font:16px ‘ByteBounce’;width:60px;text-align:right}
+.shop-bar-label{font:16px 'ByteBounce';width:60px;text-align:right}
 .shop-bar-wrap{flex:1;height:10px;border:1px solid;border-radius:2px;overflow:hidden;background:rgba(0,0,0,.4)}
 .shop-bar-fill{height:100%;border-radius:1px;transition:width .3s}
-.shop-bar-val{font:14px ‘ByteBounce’;width:70px}
+.shop-bar-val{font:14px 'ByteBounce';width:70px}
 .shop-inv{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:12px 14px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;margin-top:4px}
 .inv-section{width:100%;margin:0}
-.inv-label{font:18px ‘ByteBounce’;color:#aaa;margin-bottom:4px;text-align:left}
+.inv-label{font:18px 'ByteBounce';color:#aaa;margin-bottom:4px;text-align:left}
 .inv-slots{display:flex;gap:5px}
 .inv-slot{width:36px;height:36px;border:1px solid #ffffff22;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.02)}
 .inv-slot.filled{border-color:#00ffaa44}
-.inv-slot.filled[style*=‘cursor’]{border-color:#ffaa0044}
-.inv-slot.filled[style*=‘cursor’]:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
+.inv-slot.filled[style*='cursor']{border-color:#ffaa0044}
+.inv-slot.filled[style*='cursor']:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
 .shop-bottom{display:flex;flex-direction:column;align-items:center;padding-bottom:20px;width:100%;flex-shrink:0}
-#shop-continue{font:20px ‘ByteBounce’;padding:8px 28px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
+#shop-continue{font:20px 'ByteBounce';padding:8px 28px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
 #usable-bar{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
 .usable-btn{width:32px;height:32px;border:1px solid #ffffff22;border-radius:4px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;color:#fff;transition:all .2s}
 .usable-btn:hover{border-color:#00ffaa}
 .usable-btn.empty{opacity:0.2;pointer-events:none}
 </style>
-
 </head>
 <body>
 <div id="game-wrap">
@@ -239,7 +237,21 @@ const sfx = {
   tick(){ play('snare',0.5) },
   miss(){ tone(150,.2,.1,'sawtooth') },
   enemyHit(){ tone(100,.3,.15,'sawtooth') },
-  streak(streak=0,perfect=false){ play(perfect?'streak_perfect':'streak_greatcool',1.0); },
+  streak(streak=0,perfect=false){
+    const basePitch=1/Math.pow(2,streak/12); // cancel global pitch
+    if(perfect&&perfectStreakCount>=5){
+      // x5: play RhythmBust instead
+      play('rhythmbust',1.2,basePitch);
+    } else if(perfect){
+      // Play streak_perfect N times, 1 full beat apart
+      for(let r=0;r<perfectStreakCount;r++){
+        setTimeout(()=>play('streak_perfect',1.0,basePitch),r*BEAT*1000);
+      }
+    } else {
+      // Normal streak: streak_perfect at -3 semitones
+      play('streak_perfect',1.0,basePitch*Math.pow(2,-3/12));
+    }
+  },
   nextEnemy(){ tone(600,.15,.12); setTimeout(()=>tone(800,.15,.12),120); setTimeout(()=>tone(1000,.2,.1),240) },
   defeat(){ [0,150,300].forEach((d,i)=>setTimeout(()=>tone(300-i*80,.4,.12,'sawtooth'),d)) },
 };
@@ -1319,7 +1331,6 @@ function finishPlaying(){
 
   if(noMiss){
     streakCount++; streakActive=true; streakTextTimer=BEAT*1000;
-    sfx.streak(streakCount,isAllPerfect);
     // BGM: mark pending at streak 3, will start at first glyph dot
     if(streakCount>=3&&!bgmPlaying) bgmPending=true;
     if(bgmPlaying) updateBGMVolume();
@@ -1334,11 +1345,14 @@ function finishPlaying(){
     const fb=$('hit-fb');
     if(isAllPerfect){
       perfectStreakCount++; perfectStreakMultiplier=Math.pow(1.1, perfectStreakCount);
+      streakTextTimer=perfectStreakCount>=5?BEAT*1000:BEAT*1000*perfectStreakCount;
+      sfx.streak(streakCount,true);
       fb.textContent=`✨ PERFECT STREAK x${perfectStreakCount}!`;
       fb.style.color='#ffe066'; fb.style.fontSize='16px';
       fb.style.textShadow='0 0 12px #ffaa00';
     } else {
       perfectStreakCount=0; perfectStreakMultiplier=1.0;
+      sfx.streak(streakCount,false);
       fb.textContent=`STREAK ${streakCount}`;
       fb.style.color='#00ffaa'; fb.style.fontSize='14px';
       fb.style.textShadow='none';
@@ -1655,8 +1669,7 @@ $('resume-btn').addEventListener('click',togglePause);
     ['mutebeat','MuteBeat.wav'],
     ['rhythmbust','RhythmBust.wav'],
     ['rhythmbust_shoot','RhythmBustShoot.mp3'],
-    ['streak_perfect','Streak_perfect.wav'],
-    ['streak_greatcool','Streak_greatcool.wav']
+    ['streak_perfect','Streak_perfect.wav']
   ];
   const imageNames=['sword','shield','gold','bow'];
   const total=audioFiles.length+imageNames.length;
@@ -2055,6 +2068,5 @@ function update(ts){
 }
 requestAnimationFrame(update);
 </script>
-
 </body>
 </html>
