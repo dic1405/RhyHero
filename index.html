@@ -1322,7 +1322,9 @@ const STREAK_OPACITY = [
 ];
 function getStreakOpacity(){
   const i=Math.min(streakCount, STREAK_OPACITY.length-1);
-  return STREAK_OPACITY[i];
+  const op=STREAK_OPACITY[i];
+  if(enemyNum===1) return op.map(v=>Math.max(v,0.15));
+  return op;
 }
 function getStreakSlotCount(){
   return (streakCount>=4&&enemyNum>1?1:0); // +1 slot at streak 4+, not during tutorial
