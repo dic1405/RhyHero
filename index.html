@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <link rel="preload" href="https://raw.githubusercontent.com/dic1405/RhyHero/main/ByteBounce.woff" as="font" type="font/woff" crossorigin>
@@ -57,10 +56,10 @@ canvas{display:block;width:100%;height:100%}
 #pause-btn{position:absolute;top:12px;left:12px;font-size:20px;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid #ffffff22;color:#ffffff88;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;line-height:1}
 #pause-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
 
-#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:space-between;font-family:‘ByteBounce’,sans-serif !important}
-#shop-screen *{font-family:‘ByteBounce’,sans-serif !important}
-#shop-screen h2{font:40px ‘ByteBounce’;color:#fff;margin:20px 0 0 0;flex-shrink:0}
-#shop-gold-display{font:28px ‘ByteBounce’;color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
+#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:space-between;font-family:'ByteBounce',sans-serif !important}
+#shop-screen *{font-family:'ByteBounce',sans-serif !important}
+#shop-screen h2{font:40px 'ByteBounce';color:#fff;margin:20px 0 0 0;flex-shrink:0}
+#shop-gold-display{font:28px 'ByteBounce';color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
 .shop-middle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;overflow-y:auto}
 .shop-offers{width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;align-items:center;margin-bottom:20px}
 .shop-grid{display:flex;flex-direction:column;gap:10px}
@@ -69,37 +68,36 @@ canvas{display:block;width:100%;height:100%}
 .shop-card.sold{opacity:0.3;pointer-events:none}
 .shop-card .icon{font-size:36px;width:50px;height:50px;background:rgba(255,255,255,0.05);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .shop-card .card-info{flex:1;text-align:left}
-.shop-card .name{font:20px ‘ByteBounce’;color:#fff;margin-bottom:2px}
-.shop-card .desc{font:16px ‘ByteBounce’;color:#999;line-height:1.3}
-.shop-card .cost{font:20px ‘ByteBounce’;color:#ffaa00;flex-shrink:0;white-space:nowrap}
-.buy-btn{background:0 0;border:1.5px solid #ffaa0066;border-radius:4px;padding:6px 12px;cursor:pointer;font:20px ‘ByteBounce’;color:#ffaa00;transition:all .2s}
+.shop-card .name{font:20px 'ByteBounce';color:#fff;margin-bottom:2px}
+.shop-card .desc{font:16px 'ByteBounce';color:#999;line-height:1.3}
+.shop-card .cost{font:20px 'ByteBounce';color:#ffaa00;flex-shrink:0;white-space:nowrap}
+.buy-btn{background:0 0;border:1.5px solid #ffaa0066;border-radius:4px;padding:6px 12px;cursor:pointer;font:20px 'ByteBounce';color:#ffaa00;transition:all .2s}
 .buy-btn:hover{border-color:#ffaa00;background:rgba(255,170,0,0.1)}
 .buy-btn:disabled{opacity:0.3;cursor:default;border-color:#ffffff22}
-.sold-txt{color:#555;font:20px ‘ByteBounce’}
+.sold-txt{color:#555;font:20px 'ByteBounce'}
 .shop-card.sold .cost{color:#555}
-#reroll-btn{font:20px ‘ByteBounce’;padding:6px 16px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;align-self:center}
+#reroll-btn{font:20px 'ByteBounce';padding:6px 16px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;align-self:center}
 .shop-bars{width:100%;display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
 .shop-bar-row{display:flex;align-items:center;gap:8px}
-.shop-bar-label{font:16px ‘ByteBounce’;width:60px;text-align:right}
+.shop-bar-label{font:16px 'ByteBounce';width:60px;text-align:right}
 .shop-bar-wrap{flex:1;height:10px;border:1px solid;border-radius:2px;overflow:hidden;background:rgba(0,0,0,.4)}
 .shop-bar-fill{height:100%;border-radius:1px;transition:width .3s}
-.shop-bar-val{font:14px ‘ByteBounce’;width:70px}
+.shop-bar-val{font:14px 'ByteBounce';width:70px}
 .shop-inv{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:12px 14px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;margin-top:4px}
 .inv-section{width:100%;margin:0}
-.inv-label{font:18px ‘ByteBounce’;color:#aaa;margin-bottom:4px;text-align:left}
+.inv-label{font:18px 'ByteBounce';color:#aaa;margin-bottom:4px;text-align:left}
 .inv-slots{display:flex;gap:5px}
 .inv-slot{width:36px;height:36px;border:1px solid #ffffff22;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.02)}
 .inv-slot.filled{border-color:#00ffaa44}
-.inv-slot.filled[style*=‘cursor’]{border-color:#ffaa0044}
-.inv-slot.filled[style*=‘cursor’]:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
+.inv-slot.filled[style*='cursor']{border-color:#ffaa0044}
+.inv-slot.filled[style*='cursor']:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
 .shop-bottom{display:flex;flex-direction:column;align-items:center;padding-bottom:20px;width:100%;flex-shrink:0}
-#shop-continue{font:20px ‘ByteBounce’;padding:8px 28px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
+#shop-continue{font:20px 'ByteBounce';padding:8px 28px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
 #usable-bar{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
 .usable-btn{width:32px;height:32px;border:1px solid #ffffff22;border-radius:4px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;color:#fff;transition:all .2s}
 .usable-btn:hover{border-color:#00ffaa}
 .usable-btn.empty{opacity:0.2;pointer-events:none}
 </style>
-
 </head>
 <body>
 <div id="game-wrap">
@@ -356,15 +354,15 @@ const TAP_BONUS = {
 };
 // ── Item & Shop System ──
 const SHOP_POOL = [
-  {id:'upgrade_sword',name:'Upgrade Sword',desc:'+10% sword dmg\n+2 per tap',icon:'⚔',type:'passive',baseCost:30,inc:30},
-  {id:'upgrade_shield',name:'Upgrade Shield',desc:'+10% shield value and\n+2 shield on shield tap',icon:'🛡',type:'passive',baseCost:30,inc:30},
-  {id:'upgrade_hp',name:'Upgrade HP',desc:'+10% max HP',icon:'❤',type:'passive',baseCost:30,inc:30},
+  {id:'upgrade_sword',name:'Upgrade Sword',desc:'+5% sword dmg\n+2 per tap',icon:'⚔',type:'passive',baseCost:50,inc:50},
+  {id:'upgrade_shield',name:'Upgrade Shield',desc:'+10% shield value\n+2 shield on tap',icon:'🛡',type:'passive',baseCost:50,inc:50},
+  {id:'upgrade_hp',name:'Upgrade HP',desc:'+10% max HP',icon:'❤',type:'passive',baseCost:50,inc:50},
   {id:'health_potion',name:'Health Potion',desc:'Restore 40 HP',icon:'🧪',type:'usable',baseCost:20,inc:0},
   {id:'bow',name:'Bow Slot',desc:'Charge on half beat\\nShoot on full beat',icon:'🏹',type:'special',baseCost:50,inc:0},
-  {id:'upgrade_bow',name:'Upgrade Bow',desc:'+10% bow charge\\n+2 per tap',icon:'🏹',type:'passive',baseCost:30,inc:30,requires:'bow'},
+  {id:'upgrade_bow',name:'Upgrade Bow',desc:'+5% bow charge\\nand max charge',icon:'🏹',type:'passive',baseCost:50,inc:50,requires:'bow'},
   {id:'rare_potion',name:'Rare Potion',desc:'Restore 80 HP',icon:'💎',type:'usable',baseCost:40,inc:0,requires:'hp200'},
   {id:'power_potion',name:'Power Potion',desc:'+10 dmg per tap\\n(one fight)',icon:'⚡',type:'usable',baseCost:30,inc:0},
-  {id:'upgrade_usable',name:'Expand Usables',desc:'+1 usable slot',icon:'📦',type:'consumable',baseCost:40,inc:0},
+  {id:'upgrade_usable',name:'Expand Usables',desc:'+1 usable slot',icon:'📦',type:'consumable',baseCost:80,inc:0},
 ];
 let upgradeCounts={sword:0,shield:0,hp:0,bow:0};
 let passiveSlots=[{id:'sword',icon:'⚔',name:'Sword',cost:0},{id:'shield',icon:'🛡',name:'Shield',cost:0},{id:'gold',icon:'💰',name:'Coin',cost:0}]; // max 5
@@ -385,7 +383,7 @@ function getItemCost(item){
   if(item.id==='upgrade_shield') return item.baseCost+item.inc*upgradeCounts.shield;
   if(item.id==='upgrade_hp') return item.baseCost+item.inc*upgradeCounts.hp;
   if(item.id==='upgrade_bow') return item.baseCost+item.inc*upgradeCounts.bow;
-  if(item.id==='upgrade_usable') return maxUsableSlots===3?40:60;
+  if(item.id==='upgrade_usable') return 80;
   return item.baseCost;
 }
 
@@ -448,7 +446,7 @@ function generateShopItems(){
     if(it.requires==='bow'&&!bowUnlocked) return false;
     if(it.id==='bow'&&(bowUnlocked||enemyNum<4)) return false;
     if(it.requires==='hp200'&&PLAYER_MAX_HP<=200) return false;
-    if(it.id==='upgrade_usable'&&maxUsableSlots>=5) return false;
+    if(it.id==='upgrade_usable'&&maxUsableSlots>=6) return false;
     return true;
   });
   shopItems=[]; shopSold=[false,false,false];
@@ -2070,6 +2068,5 @@ function update(ts){
 }
 requestAnimationFrame(update);
 </script>
-
 </body>
 </html>
