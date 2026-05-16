@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <link rel="preload" href="https://raw.githubusercontent.com/dic1405/RhyHero/main/ByteBounce.woff" as="font" type="font/woff" crossorigin>
@@ -57,8 +56,8 @@ canvas{display:block;width:100%;height:100%}
 #pause-btn{position:absolute;top:12px;left:12px;font-size:20px;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid #ffffff22;color:#ffffff88;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;line-height:1}
 #pause-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
 
-#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:space-between;font-family:‘ByteBounce’,sans-serif !important}
-#shop-screen *{font-family:‘ByteBounce’,sans-serif !important}
+#shop-screen{display:none;flex-direction:column;align-items:center;padding:0 15px;overflow-y:auto;background:#1c1c26 !important;justify-content:space-between;font-family:'ByteBounce',sans-serif !important}
+#shop-screen *{font-family:'ByteBounce',sans-serif !important}
 .fx-row{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.04);border:1px solid #ffffff15;border-radius:6px;padding:10px 12px}
 .fx-info{flex:1}
 .fx-name{font:16px ByteBounce;color:#fff}
@@ -67,8 +66,8 @@ canvas{display:block;width:100%;height:100%}
 .fx-toggle.on{border-color:#00ffaa66;color:#00ffaa;background:rgba(0,255,170,0.1)}
 .lab-btn{font:20px ByteBounce;width:36px;height:36px;border-radius:4px;border:1.5px solid #ffffff33;color:#fff;background:0 0;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .lab-btn:active{background:rgba(255,255,255,0.1)}
-#shop-screen h2{font:40px ‘ByteBounce’;color:#fff;margin:20px 0 0 0;flex-shrink:0}
-#shop-gold-display{font:28px ‘ByteBounce’;color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
+#shop-screen h2{font:40px 'ByteBounce';color:#fff;margin:20px 0 0 0;flex-shrink:0}
+#shop-gold-display{font:28px 'ByteBounce';color:#ffaa00;margin:10px 0 14px 0;flex-shrink:0}
 .shop-middle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;overflow-y:auto}
 .shop-offers{width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;align-items:center;margin-bottom:20px}
 .shop-grid{display:flex;flex-direction:column;gap:10px}
@@ -77,37 +76,36 @@ canvas{display:block;width:100%;height:100%}
 .shop-card.sold{opacity:0.3;pointer-events:none}
 .shop-card .icon{font-size:36px;width:50px;height:50px;background:rgba(255,255,255,0.05);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .shop-card .card-info{flex:1;text-align:left}
-.shop-card .name{font:20px ‘ByteBounce’;color:#fff;margin-bottom:2px}
-.shop-card .desc{font:16px ‘ByteBounce’;color:#999;line-height:1.3}
-.shop-card .cost{font:20px ‘ByteBounce’;color:#ffaa00;flex-shrink:0;white-space:nowrap}
-.buy-btn{background:0 0;border:1.5px solid #ffaa0066;border-radius:4px;padding:6px 12px;cursor:pointer;font:20px ‘ByteBounce’;color:#ffaa00;transition:all .2s}
+.shop-card .name{font:20px 'ByteBounce';color:#fff;margin-bottom:2px}
+.shop-card .desc{font:16px 'ByteBounce';color:#999;line-height:1.3}
+.shop-card .cost{font:20px 'ByteBounce';color:#ffaa00;flex-shrink:0;white-space:nowrap}
+.buy-btn{background:0 0;border:1.5px solid #ffaa0066;border-radius:4px;padding:6px 12px;cursor:pointer;font:20px 'ByteBounce';color:#ffaa00;transition:all .2s}
 .buy-btn:hover{border-color:#ffaa00;background:rgba(255,170,0,0.1)}
 .buy-btn:disabled{opacity:0.3;cursor:default;border-color:#ffffff22}
-.sold-txt{color:#555;font:20px ‘ByteBounce’}
+.sold-txt{color:#555;font:20px 'ByteBounce'}
 .shop-card.sold .cost{color:#555}
-#reroll-btn{font:20px ‘ByteBounce’;padding:6px 16px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;align-self:center}
+#reroll-btn{font:20px 'ByteBounce';padding:6px 16px;background:0 0;border:1.5px solid #ffaa0066;color:#ffaa00;cursor:pointer;border-radius:3px;align-self:center}
 .shop-bars{width:100%;display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
 .shop-bar-row{display:flex;align-items:center;gap:8px}
-.shop-bar-label{font:16px ‘ByteBounce’;width:60px;text-align:right}
+.shop-bar-label{font:16px 'ByteBounce';width:60px;text-align:right}
 .shop-bar-wrap{flex:1;height:10px;border:1px solid;border-radius:2px;overflow:hidden;background:rgba(0,0,0,.4)}
 .shop-bar-fill{height:100%;border-radius:1px;transition:width .3s}
-.shop-bar-val{font:14px ‘ByteBounce’;width:70px}
+.shop-bar-val{font:14px 'ByteBounce';width:70px}
 .shop-inv{background:rgba(255,255,255,0.02);border:1px solid #ffffff11;border-radius:8px;padding:12px 14px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;margin-top:4px}
 .inv-section{width:100%;margin:0}
-.inv-label{font:18px ‘ByteBounce’;color:#aaa;margin-bottom:4px;text-align:left}
+.inv-label{font:18px 'ByteBounce';color:#aaa;margin-bottom:4px;text-align:left}
 .inv-slots{display:flex;gap:5px}
 .inv-slot{width:36px;height:36px;border:1px solid #ffffff22;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.02)}
 .inv-slot.filled{border-color:#00ffaa44}
-.inv-slot.filled[style*=‘cursor’]{border-color:#ffaa0044}
-.inv-slot.filled[style*=‘cursor’]:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
+.inv-slot.filled[style*='cursor']{border-color:#ffaa0044}
+.inv-slot.filled[style*='cursor']:hover{border-color:#ff3366;background:rgba(255,51,102,0.1)}
 .shop-bottom{display:flex;flex-direction:column;align-items:center;padding-bottom:20px;width:100%;flex-shrink:0}
-#shop-continue{font:20px ‘ByteBounce’;padding:8px 28px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
+#shop-continue{font:20px 'ByteBounce';padding:8px 28px;background:0 0;border:2px solid #00ffaa;color:#00ffaa;cursor:pointer;border-radius:3px;margin-top:auto}
 #usable-bar{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
 .usable-btn{width:32px;height:32px;border:1px solid #ffffff22;border-radius:4px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;pointer-events:auto;color:#fff;transition:all .2s}
 .usable-btn:hover{border-color:#00ffaa}
 .usable-btn.empty{opacity:0.2;pointer-events:none}
 </style>
-
 </head>
 <body>
 <div id="game-wrap">
@@ -697,7 +695,7 @@ let speedMultiplier=1;
 // Lab settings
 let labBPM=100, labDMG=50;
 let fxMute=false, fxFog=false, fxExtraHit=false;
-let fogActive=false, fogTapCount=0;
+let fogOpacity=0; // 0-100, reduces glyph opacity by 20 per tap
 let missCount=0;
 let rbActive=false,rbPending=false,rbPhase='',rbTimer=0,rbBeatIdx=0,rbPitchStep=0;
 let rbSlotRevealed=[],rbHalfCount=0,rbBeatFlash=[];
@@ -842,7 +840,7 @@ function updateUI(){
 function showRollButton(){
   $('roll-wrap').style.display='flex';
   $('result-display').textContent='';
-  slotPhase='waiting'; missCount=0;
+  slotPhase='waiting'; missCount=0; if(fxFog) fogOpacity=0;
   // Boss tutorial: first boss (level 5)
   if(false&&isBoss(enemyNum)){
     if(enemyNum===5) bossTutorialFirstRoll=true;
@@ -1184,7 +1182,7 @@ function spawnSlashProjectile(damage){
 }
 
 function startGlyphPhase(){
-  fogActive=false; fogTapCount=0;
+
   if(enemyNum===1&&!tutorialDone){ tutorialActive=true; tutorialStep=0; }
   slotPhase='playing';
   const em=buildRhythmFromSlots();
@@ -1270,7 +1268,7 @@ function handleHit(){
     if(idx===0) return;
     if(!intHits[idx]){
       intHits[idx]=true; vertexRatings[idx]=r.rating; turnResults.push(r.rating);
-      if(fxFog){ fogTapCount++; if(fogTapCount>=2) fogActive=true; }
+      if(fxFog){ fogOpacity=Math.min(100,fogOpacity+20); }
       showFB(r.rating);
       spawnParticles(glyphVerts[idx].x,glyphVerts[idx].y,r.rating);
       applyTap(idx,r.rating);
@@ -1780,7 +1778,7 @@ $('dmg-down').addEventListener('click',()=>{labDMG=Math.max(5,labDMG-5);$('dmg-v
 $('start-btn').addEventListener('click',()=>{
   $('start-screen').style.display='none';
   enemyNum=10; enemyMaxHP=1000; enemyHP=1000; currentEnemyDmg=labDMG;
-  fogActive=false; fogTapCount=0;
+
   currentBPM=labBPM; BEAT=60/currentBPM; updateBGMTempo();
   updateUI();
   $('e-label').textContent='LAB ENEMY';
@@ -1881,7 +1879,7 @@ function drawGlyph(){
   ctx.globalAlpha=1;
   if(slotPhase!=='playing'||(!phaseActive&&!showingResults)) return;
   let so=getStreakOpacity();
-  if(fogActive) so=[0,0,0,0];
+  if(fxFog&&fogOpacity>0){ const f=1-fogOpacity/100; so=so.map(v=>v*f); }
   const col='#00ffaa', dim='rgba(0,255,170,0.15)', mid='rgba(0,255,170,0.4)';
   const maxR=12, minR=7.5, animW=BEAT*1000;
 
@@ -1976,7 +1974,7 @@ function drawGlyph(){
 
   // Dot — glyph opacity (visible during fog)
   if(phaseActive){
-    ctx.globalAlpha=fogActive?0.8:so[0];
+    ctx.globalAlpha=fxFog?Math.max(0.15,1-fogOpacity/100):so[0];
     const p=getDotPos();
     ctx.beginPath();ctx.arc(p.x,p.y,12,0,Math.PI*2);
     ctx.fillStyle='rgba(0,255,170,0.1)';ctx.fill();
@@ -2152,6 +2150,5 @@ function update(ts){
 }
 requestAnimationFrame(update);
 </script>
-
 </body>
 </html>
