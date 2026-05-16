@@ -729,10 +729,10 @@ function updateUI(){
   $('power-indicator').style.display=powerUpActive?'block':'none';
   playerShield=Math.min(playerShield,PLAYER_MAX_SHIELD);
   $('p-shield-fill').style.width=(playerShield/PLAYER_MAX_SHIELD*100)+'%';
-  $('p-shield-txt').textContent=playerShield>0?`🛡 ${playerShield}`:'';
+  $('p-shield-txt').innerHTML=playerShield>0?`<img src="${ASSET_BASE}icon_shield.png" style="width:18px;height:18px;vertical-align:middle;image-rendering:pixelated"> ${playerShield}`:'';
   $('e-hp-fill').style.width=(enemyHP/enemyMaxHP*100)+'%';
   $('e-hp-txt').textContent=`${enemyHP}/${enemyMaxHP}`;
-  $('gold-display').textContent=gold>0?`💰 ${gold}`:'';
+  $('gold-display').innerHTML=gold>0?`<img src="${ASSET_BASE}icon_coin.png" style="width:18px;height:18px;vertical-align:middle;image-rendering:pixelated"> ${gold}`:'';
 }
 
 // ── Slot Machine ──
