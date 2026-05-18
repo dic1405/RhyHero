@@ -107,7 +107,7 @@ canvas{display:block;width:100%;height:100%}
   <div id="enemy-section">
     <div id="e-label">ENEMY 1</div>
     <div id="e-hp-wrap" class="bar-wrap"><div id="e-hp-fill" class="bar-fill"></div></div>
-    <div id="e-hp-txt">2000/2000</div>
+    <div id="e-hp-txt">250/250</div>
     <div id="e-atk">ATK: 25</div>
   </div>
   <div id="player-section">
@@ -357,18 +357,6 @@ let passiveSlots=[{id:'sword',icon:'⚔',name:'Sword',cost:0},{id:'shield',icon:
 let powerUpActive=false; // +50% dmg, +50% glyph speed for next enemy
 let armorHP=0; // total phantom HP
 const ARMOR_PER_BUY=100;
-// Tap-activated mechanic globals
-let slotPendingValues=[];
-let slotTapAccuracy=[];
-let halfBeatHits=[];
-let matchTapCount=0;
-let matchHitCount=0;
-let matchAccuracySum=0;
-let matchCompletedSlots=0; // slots fully tapped (F=tapped, HH=both halves tapped)
-let matchIcon=null, matchCount=0;
-let vertexIcons=[];
-let slotTapLit=[];
-let vertToSlot={};
 let bowUnlocked=false;
 let bowCharge=0, bowMaxCharge=300, bowShotDmg=0, bowShooting=false;
 let bowFShotCount=0;
@@ -577,7 +565,7 @@ function getShieldTap(rating){ return TAP_BONUS.shield[rating]||0; }
 
 // ── State ──
 let playerHP=PLAYER_MAX_HP, playerShield=0, gold=0;
-let enemyMaxHP=2000, enemyHP=2000, enemyNum=1;
+let enemyMaxHP=250, enemyHP=250, enemyNum=1;
 let currentEnemyDmg=25;
 
 let slotIcons=[], slotBeats=[];
@@ -586,6 +574,8 @@ let activeSlots=3;
 let slotSchedule=[], slotScheduleTime=0, slotScheduleIdx=0;
 let slotRevealedIcons=[];
 let slotBeatLines=[], slotBeatFlash=[];
+let slotTapLit=[]; // 0=unlit, 1=first half lit, 2=both lit
+let vertToSlot={};
 let slotValues=[];
 let iconDotVertices=[];
 
@@ -749,14 +739,6 @@ function updateUI(){
   $('p-shield-txt').innerHTML=playerShield>0?`<img src="${ASSET_BASE}icon_shield.png" style="width:18px;height:18px;vertical-align:middle;image-rendering:pixelated"> ${playerShield}`:'';
   $('e-hp-fill').style.width=(enemyHP/enemyMaxHP*100)+'%';
   $('e-hp-txt').textContent=`${enemyHP}/${enemyMaxHP}`;
-  // Debug: show slot accuracy
-  let dbg='';
-  for(let i=0;i<activeSlots;i++){
-    const acc=slotTapAccuracy[i];
-    const pv=slotPendingValues[i];
-    if(pv) dbg+=(pv.icon[0].toUpperCase()+':'+(acc?Math.floor(acc*100)+'%':'--')+' ');
-  }
-  $('p-hp-txt').textContent=`HP ${playerHP}/${PLAYER_MAX_HP}`+(armorHP>0?` ⚙${armorHP}`:'')+' | '+dbg;
   $('gold-display').innerHTML=gold>0?`<img src="${ASSET_BASE}icon_coin.png" style="width:18px;height:18px;vertical-align:middle;image-rendering:pixelated"> ${gold}`:'';
 }
 
@@ -773,7 +755,7 @@ function showRollButton(){
   }
   activeSlots=slotCount; // reset to base (no streak bonus)
   slotRevealedIcons=new Array(activeSlots).fill(false);
-  slotBeatLines=new Array(activeSlots).fill(0); slotBeatFlash=new Array(activeSlots).fill(0);
+  slotBeatLines=new Array(activeSlots).fill(0); slotBeatFlash=new Array(activeSlots).fill(0); slotTapLit=new Array(activeSlots).fill(0);
   baseValues={sword:0,shield:0,gold:0,bow:0};
   tapValues={sword:0,shield:0,gold:0,bow:0};
   isAllPerfect=false;
@@ -838,9 +820,6 @@ function startSlotPhase(){
   slotRevealedIcons=new Array(activeSlots).fill(false);
   slotPhase='rolling'; slotRollAnim=0;
   criticalTextActive=false; criticalTextFade=0; criticalTextLabel='';
-  slotPendingValues=[]; slotTapAccuracy=[]; halfBeatHits=[];
-  slotTapLit=new Array(activeSlots).fill(0); vertexIcons=new Array(50).fill(null);
-  matchTapCount=0; matchHitCount=0; matchAccuracySum=0; matchCompletedSlots=0;
   phaseActive=false; showingResults=false;
 
   baseValues={sword:0,shield:0,gold:0,bow:0};
@@ -851,7 +830,7 @@ function startSlotPhase(){
   // Count icon occurrences for partial match detection
   const iconCounts={sword:0,shield:0,gold:0,bow:0};
   slotIcons.forEach(ic=>iconCounts[ic]++);
-  matchIcon=null; matchCount=0;
+  let matchIcon=null, matchCount=0;
   for(const ic in iconCounts){
     if(iconCounts[ic]>=3 && iconCounts[ic]>matchCount){ matchIcon=ic; matchCount=iconCounts[ic]; }
   }
@@ -897,14 +876,14 @@ function startSlotPhase(){
   vertToSlot={};
   let vc=1;
   for(let i=0;i<activeSlots;i++){
-    vertToSlot[vc]=i; // map icon dot vertex to slot
+    vertToSlot[vc]=i; // icon dot → slot
     const b=slotBeats[i];
-    if(b==='HH'||b==='MH'||b==='HM') vertToSlot[vc+1]=i; // map beat dot to same slot
+    if(b==='HH'||b==='MH'||b==='HM') vertToSlot[vc+1]=i; // beat dot → slot
     vc+=(b==='HH'||b==='MH'||b==='HM'?2:1);
   }
 
   slotSchedule=[{time:0,action:'init',slot:-1}];
-  slotBeatLines=new Array(activeSlots).fill(0); slotBeatFlash=new Array(activeSlots).fill(0);
+  slotBeatLines=new Array(activeSlots).fill(0); slotBeatFlash=new Array(activeSlots).fill(0); slotTapLit=new Array(activeSlots).fill(0);
   let t=0;
   for(let e=0;e<edges.length;e++){
     t+=edges[e]*BEAT*1000;
@@ -955,10 +934,18 @@ function applySlotReveal(idx){
   let val=sv.value;
   if(ic==='sword'){ val=Math.floor(val*(getSwordBase()/30)*perfectStreakMultiplier); if(powerUpActive) val=Math.floor(val*1.5); }
   else if(ic==='shield') val=Math.floor(val*perfectStreakMultiplier);
-  else if(ic==='gold') val=Math.floor(val*perfectStreakMultiplier);
-  // NEW: store pending value, don't apply yet
-  slotPendingValues[idx]={icon:ic, value:val, matchValue:0, activated:false, accuracy:0};
-  baseValues[ic]+=val; // keep for display tracking
+  baseValues[ic]+=val;
+  if(ic==='sword'){
+    enemyHP=Math.max(0,enemyHP-val);
+    shake=Math.min(val/10,4);
+    spawnSlashProjectile(val);
+  } else if(ic==='shield'){
+    playerShield=Math.min(playerShield+val,PLAYER_MAX_SHIELD);
+    shieldAnims.push({life:1,x:W()/2,y:H()*.92});
+  } else if(ic==='gold'){
+    val=Math.floor(val*perfectStreakMultiplier); gold+=val;
+    spawnCoins(W()/2,H()*.5,'PERFECT',val);
+  }
   updateUI();
 }
 
@@ -1247,16 +1234,6 @@ function handleHit(){
     if(idx>0&&!intHits[idx]){
       intHits[idx]=true; vertexRatings[idx]='MISS'; turnResults.push('MISS');
       allPerfectSoFar=false;
-      // Record 0 accuracy for missed slot
-      const missII=iconDotVertices.indexOf(idx);
-      if(missII>=0){
-        slotTapAccuracy[missII]=0;
-        // Track match miss
-        if(matchIcon && slotIcons[missII]===matchIcon){
-          matchTapCount++;
-          // matchHitCount NOT incremented (miss)
-        }
-      }
       showFB('MISS'); sfx.miss();
     }
   }
@@ -1269,6 +1246,10 @@ function applyTap(vi, rating){
 
   if(ii>=0){
     const icon=slotIcons[ii];
+    const bt=slotBeats[ii];
+    // Light up beat indicator on successful tap
+    if(bt==='F'||bt==='MF'||bt==='H') slotTapLit[ii]=1;
+    else if(bt==='HH'||bt==='MH'||bt==='HM') slotTapLit[ii]=Math.max(slotTapLit[ii],1);
     let val=TAP_BONUS[icon][rating]||0;
     if(icon==='sword') val=getSwordTap(rating);
     else if(icon==='shield') val=getShieldTap(rating);
@@ -1291,181 +1272,25 @@ function applyTap(vi, rating){
       }
       updateUI(); return;
     }
-    // TAP-ACTIVATED: apply value based on beat type
-    const accVal=rating==='PERFECT'?1.0:rating==='GREAT'?0.8:0.5;
-    const bt=slotBeats[ii];
-
-    // HH/MH/HM: icon tap = first half, record only, value triggers on second half
-    if(bt==='HH'||bt==='MH'||bt==='HM'){
-      if(!halfBeatHits[ii]) halfBeatHits[ii]=[0,0];
-      halfBeatHits[ii][0]=accVal;
-      vertexIcons[vi]=icon; // show icon on first half dot too
-      slotTapLit[ii]=1; // light up first half indicator
-      // Sound only (no value applied yet, triggers on second half)
-      if(icon==='sword') play('sword',vol);
-      else if(icon==='shield') play('shield',vol);
-      else play('coin',vol);
-      if(rating==='PERFECT') shake=1;
-      updateUI();
-      return;
-    }
-
-    // F/H beat: apply single value × accuracy immediately
-    slotTapAccuracy[ii]=accVal;
-    vertexIcons[vi]=icon; // show icon on this vertex
-    slotTapLit[ii]=1; // light up beat indicator
-    const pv=slotPendingValues[ii];
-    // For match slots: always use single base value (not remainder)
-    const isMatchSlot=(matchIcon && icon===matchIcon);
-    let baseVal=pv?pv.value:0;
-    if(isMatchSlot){
-      baseVal=SINGLE_BASE[icon];
-      if(icon==='sword'){ baseVal=Math.floor(baseVal*(getSwordBase()/30)*perfectStreakMultiplier); if(powerUpActive) baseVal=Math.floor(baseVal*1.5); }
-      else baseVal=Math.floor(baseVal*perfectStreakMultiplier);
-    }
-    const singleVal=Math.floor(baseVal*accVal);
-    let bonusVal=0;
-
-    if(isMatchSlot){
-      matchTapCount++;
-      matchHitCount++;
-      matchAccuracySum+=accVal;
-      matchCompletedSlots++; // F-beat: tapped = completed
-
-      // Critical sound: only when completing a match (3+ completed slots)
-      if(matchCompletedSlots>=3){
-        const critPitch=Math.pow(2,(matchCompletedSlots-3)/12);
-        play('critical',0.9,critPitch);
-        const tapLabel=matchCompletedSlots>=6?'LEGENDARY':matchCompletedSlots>=5?'JACKPOT':matchCompletedSlots>=4?'MEGA QUAD':'LUCKY TRIPLE';
-        if(!criticalTextActive || (MATCH_RANK[tapLabel]||0)>(MATCH_RANK[criticalTextLabel]||0)){
-          criticalTextLabel=tapLabel;
-        }
-        criticalTextActive=true; criticalTextFade=1;
-      }
-
-      // Check if this is the LAST match icon
-      let remainingMatch=0;
-      for(let si=0;si<activeSlots;si++){
-        if(slotIcons[si]===matchIcon && slotTapAccuracy[si]===undefined) remainingMatch++;
-      }
-      if(remainingMatch===0){
-        // Last match icon tapped → trigger match bonus
-        const effectiveCount=matchHitCount; // hits only, misses excluded
-        if(matchCompletedSlots>=3 && MATCH_VALUES[matchIcon] && MATCH_VALUES[matchIcon][matchCompletedSlots]){
-          let matchVal=MATCH_VALUES[matchIcon][matchCompletedSlots];
-          if(matchIcon==='sword'){ matchVal=Math.floor(matchVal*(getSwordBase()/30)*perfectStreakMultiplier); if(powerUpActive) matchVal=Math.floor(matchVal*1.5); }
-          else matchVal=Math.floor(matchVal*perfectStreakMultiplier);
-          const singleBase=SINGLE_BASE[matchIcon];
-          // Scale single base same as match value
-          let scaledSingle=singleBase;
-          if(matchIcon==='sword'){ scaledSingle=Math.floor(singleBase*(getSwordBase()/30)*perfectStreakMultiplier); if(powerUpActive) scaledSingle=Math.floor(scaledSingle*1.5); }
-          else scaledSingle=Math.floor(singleBase*perfectStreakMultiplier);
-          const totalSingles=matchHitCount*scaledSingle;
-          const rawBonus=matchVal-totalSingles;
-          if(rawBonus>0){
-            const avgAcc=matchAccuracySum/matchHitCount;
-            bonusVal=Math.floor(rawBonus*avgAcc);
-          }
-        }
-      }
-    }
-
-    // Apply single value immediately
-    const totalVal=singleVal+bonusVal;
-    tapValues[icon]+=totalVal;
-    if(icon==='sword'){
-      if(totalVal>0){ enemyHP=Math.max(0,enemyHP-totalVal); spawnSlashProjectile(totalVal); }
-      shake=Math.min(totalVal/10,4);
-      play('sword',vol);
-    } else if(icon==='shield'){
-      if(totalVal>0) playerShield=Math.min(playerShield+totalVal,PLAYER_MAX_SHIELD);
-      shieldAnims.push({life:1,x:W()/2,y:H()*.92});
-      play('shield',vol);
-    } else {
-      if(totalVal>0){ gold+=totalVal; spawnCoins(vx,vy,rating,totalVal); }
-      play('coin',vol);
-    }
-    if(rating==='PERFECT') shake=Math.min(Math.max(totalVal,2),3);
-    updateUI();
+    // powerUp: +50% damage
+    if(powerUpActive&&val>0) val=Math.floor(val*1.5);
+    tapValues[icon]+=val;
+    if(rating==='PERFECT') shake=Math.min(Math.max(val,2),3);
+    if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); spawnSlashProjectile(val); play('sword',vol); }
+    else if(icon==='shield'){ playerShield=Math.min(playerShield+val,PLAYER_MAX_SHIELD); updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); play('shield',vol); }
+    else { gold+=val; updateUI(); spawnCoins(vx,vy,rating,val); play('coin',vol); }
   } else if(vi>0){
-    // Beat dot (second half of HH): triggers the slot's value
+    // Light up second half of beat indicator
+    const beatSlot=vertToSlot[vi];
+    if(beatSlot!==undefined) slotTapLit[beatSlot]=2;
     let ab={PERFECT:5,GREAT:2,COOL:1}[rating];
-    const beatSlotIdx=vertToSlot[vi];
-    if(beatSlotIdx!==undefined && slotBeats[beatSlotIdx]){
-      const bt=slotBeats[beatSlotIdx];
-      if(bt==='HH'||bt==='MH'||bt==='HM'){
-        const beatAcc=rating==='PERFECT'?1.0:rating==='GREAT'?0.8:0.5;
-        if(!halfBeatHits[beatSlotIdx]) halfBeatHits[beatSlotIdx]=[0,0];
-        const firstAcc=halfBeatHits[beatSlotIdx][0];
-        halfBeatHits[beatSlotIdx][1]=beatAcc;
-        // Slot accuracy = avg of both halves. Miss first = 0 → 50% penalty
-        const slotAcc=(firstAcc+beatAcc)/2;
-        slotTapAccuracy[beatSlotIdx]=slotAcc;
-        vertexIcons[vi]=slotIcons[beatSlotIdx]; // show icon at second half dot
-        slotTapLit[beatSlotIdx]=2; // light up both halves
-        // Apply slot value now (second half triggers the slot)
-        const pv=slotPendingValues[beatSlotIdx];
-        if(pv){
-          const icon=pv.icon;
-          const isMatchSlot2=(matchIcon && icon===matchIcon);
-          let hhBaseVal=pv.value;
-          if(isMatchSlot2){
-            hhBaseVal=SINGLE_BASE[icon];
-            if(icon==='sword'){ hhBaseVal=Math.floor(hhBaseVal*(getSwordBase()/30)*perfectStreakMultiplier); if(powerUpActive) hhBaseVal=Math.floor(hhBaseVal*1.5); }
-            else hhBaseVal=Math.floor(hhBaseVal*perfectStreakMultiplier);
-          }
-          const slotVal=Math.floor(hhBaseVal*slotAcc);
-          // Check match bonus for this slot
-          const isMatchSlot=isMatchSlot2;
-          let bonusVal=0;
-          if(isMatchSlot){
-            matchTapCount++;
-            matchHitCount++;
-            matchAccuracySum+=slotAcc;
-            // HH slot complete only if BOTH halves hit (firstAcc > 0)
-            if(firstAcc>0){
-              matchCompletedSlots++;
-              // Critical sound when completing match
-              if(matchCompletedSlots>=3){
-                const critP=Math.pow(2,(matchCompletedSlots-3)/12);
-                play('critical',0.9,critP);
-                const tapL=matchCompletedSlots>=6?'LEGENDARY':matchCompletedSlots>=5?'JACKPOT':matchCompletedSlots>=4?'MEGA QUAD':'LUCKY TRIPLE';
-                if(!criticalTextActive||(MATCH_RANK[tapL]||0)>(MATCH_RANK[criticalTextLabel]||0)) criticalTextLabel=tapL;
-                criticalTextActive=true; criticalTextFade=1;
-              }
-            }
-            let remainingMatch=0;
-            for(let si=0;si<activeSlots;si++){
-              if(slotIcons[si]===matchIcon && slotTapAccuracy[si]===undefined) remainingMatch++;
-            }
-            if(remainingMatch===0 && matchCompletedSlots>=3 && MATCH_VALUES[matchIcon] && MATCH_VALUES[matchIcon][matchCompletedSlots]){
-              let matchV=MATCH_VALUES[matchIcon][matchCompletedSlots];
-              if(matchIcon==='sword'){ matchV=Math.floor(matchV*(getSwordBase()/30)*perfectStreakMultiplier); if(powerUpActive) matchV=Math.floor(matchV*1.5); }
-              else matchV=Math.floor(matchV*perfectStreakMultiplier);
-              const singleBase2=SINGLE_BASE[matchIcon];
-              let scaledSingle2=singleBase2;
-              if(matchIcon==='sword'){ scaledSingle2=Math.floor(singleBase2*(getSwordBase()/30)*perfectStreakMultiplier); if(powerUpActive) scaledSingle2=Math.floor(scaledSingle2*1.5); }
-              else scaledSingle2=Math.floor(singleBase2*perfectStreakMultiplier);
-              const totalSingles=matchHitCount*scaledSingle2;
-              const rawBonus=matchV-totalSingles;
-              if(rawBonus>0) bonusVal=Math.floor(rawBonus*(matchAccuracySum/matchHitCount));
-            }
-          }
-          const totalVal=slotVal+bonusVal;
-          if(icon==='sword'&&totalVal>0){ enemyHP=Math.max(0,enemyHP-totalVal); spawnSlashProjectile(totalVal); }
-          if(icon==='shield'&&totalVal>0) playerShield=Math.min(playerShield+totalVal,PLAYER_MAX_SHIELD);
-          if(icon==='gold'&&totalVal>0){ gold+=totalVal; spawnCoins(vx,vy,rating,totalVal); }
-        }
-      }
-    }
-    // Beat dot visual/sound - only for current slot's icon type
-    if(beatSlotIdx!==undefined){
-      const bdIcon=slotIcons[beatSlotIdx];
-      if(bdIcon==='sword') spawnSlashProjectile(ab);
-      else if(bdIcon==='shield') shieldAnims.push({life:1,x:W()/2,y:H()*.92});
-      else if(bdIcon==='gold') spawnCoins(vx,vy,rating,ab);
-    }
+    let abShield={PERFECT:3,GREAT:2,COOL:1}[rating];
+    if(powerUpActive) ab=Math.floor(ab*1.5);
     if(rating==='PERFECT') shake=Math.min(ab/3,2);
+    if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); spawnSlashProjectile(ab); }
+    if(baseValues.shield>0){ tapValues.shield+=abShield; playerShield=Math.min(playerShield+abShield,PLAYER_MAX_SHIELD); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); }
+    if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating,ab); }
+    if(baseValues.bow>0){ bowCharge+=ab; if(bowCharge>getBowMaxCharge()) bowCharge=0; }
     updateUI(); play('snare',vol*0.5);
   }
 }
@@ -1518,7 +1343,6 @@ function getStreakSlotCount(){
 
 function finishPlaying(){
   criticalTextActive=false;
-  // NEW MECHANIC: apply tap-activated slot values
 
   phaseActive=false; showingResults=true;
   const tappable=totalInts-1;
@@ -1796,7 +1620,7 @@ function endGame(){
 }
 
 function resetGame(){
-  playerHP=200; playerShield=0; gold=1000; PLAYER_MAX_HP=200; PLAYER_MAX_SHIELD=30;
+  playerHP=200; playerShield=0; gold=0; PLAYER_MAX_HP=200; PLAYER_MAX_SHIELD=30;
   upgradeCounts={sword:0,shield:0,hp:0,bow:0};
   passiveSlots=[{id:'sword',icon:'⚔',name:'Sword',cost:0},{id:'shield',icon:'🛡',name:'Shield',cost:0},{id:'gold',icon:'💰',name:'Coin',cost:0}];
   powerUpActive=false; armorHP=0; bowUnlocked=false; rerollCount=0;
@@ -1950,46 +1774,38 @@ function drawSlots(){
     }
   }
 
-  // Beat indicators: dark grey base → white flash on reveal → bright white on tap
+  // Beat indicators: dark grey → flash white on reveal → bright white on tap
   const by=sy+sh/2+8, lh=3, lp=4;
   for(let i=0;i<activeSlots;i++){
     if(slotBeatLines[i]<=0) continue;
     const x=sx+i*(sw+gap), bt=slotBeats[i];
     const hw=(sw-lp)/2;
-    // Flash: white pulse on reveal (decays back to dark grey)
     const flash=slotBeatFlash[i]>0?(slotBeatFlash[i]/300):0;
-    // Per-segment state: dark grey (0.15) → flash white (0.7) → tap bright white (0.9)
     const lit=slotTapLit[i]||0;
 
     if(bt==='F'){
       const a=lit>=1?0.9:(0.15+flash*0.55);
       ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fillRect(x,by,sw,lh);
     } else if(bt==='HH'){
-      // First half
       const a1=lit>=1?0.9:(slotBeatLines[i]>=1?(0.15+flash*0.55):0);
       if(a1>0){ ctx.fillStyle=`rgba(255,255,255,${a1})`; ctx.fillRect(x,by,hw,lh); }
-      // Second half
       const a2=lit>=2?0.9:(slotBeatLines[i]>=2?(0.15+flash*0.55):0);
       if(a2>0){ ctx.fillStyle=`rgba(255,255,255,${a2})`; ctx.fillRect(x+hw+lp,by,hw,lh); }
     } else if(bt==='MF'){
-      // Mute: red outline, bright white if tapped (auto-perfect on skip)
       const a=lit>=1?0.9:0;
       if(a>0){ ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fillRect(x,by,sw,lh); }
       else { ctx.strokeStyle=`rgba(255,51,102,${0.4+flash*0.4})`; ctx.lineWidth=1.5; ctx.strokeRect(x+2,by-1,sw-4,lh+2); }
     } else if(bt==='MH'){
-      // Mute first half, normal second half
       if(lit>=1){ ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fillRect(x,by,hw,lh); }
       else { ctx.strokeStyle=`rgba(255,51,102,${0.4+flash*0.4})`; ctx.lineWidth=1.5; ctx.strokeRect(x+2,by-1,hw-4,lh+2); }
       const a2=lit>=2?0.9:(slotBeatLines[i]>=2?(0.15+flash*0.55):0);
       if(a2>0){ ctx.fillStyle=`rgba(255,255,255,${a2})`; ctx.fillRect(x+hw+lp,by,hw,lh); }
     } else if(bt==='HM'){
-      // Normal first half, mute second half
       const a1=lit>=1?0.9:(slotBeatLines[i]>=1?(0.15+flash*0.55):0);
       if(a1>0){ ctx.fillStyle=`rgba(255,255,255,${a1})`; ctx.fillRect(x,by,hw,lh); }
       if(lit>=2){ ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fillRect(x+hw+lp,by,hw,lh); }
       else { ctx.strokeStyle=`rgba(255,51,102,${0.4+flash*0.4})`; ctx.lineWidth=1.5; ctx.strokeRect(x+hw+lp+2,by-1,hw-4,lh+2); }
     } else {
-      // H (single half)
       const a=lit>=1?0.9:(0.15+flash*0.55);
       ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fillRect(x+(sw-hw)/2,by,hw,lh);
     }
@@ -2108,12 +1924,6 @@ function drawGlyph(){
     } else if(hit){
       ctx.beginPath();ctx.arc(v.x,v.y,2.5,0,Math.PI*2);
       ctx.fillStyle=rc+'77';ctx.fill();
-      // Draw slot icon on successfully tapped vertex
-      if(vertexRatings[i]!=='MISS' && vertexIcons[i]){
-        ctx.globalAlpha=0.85;
-        drawIcon(vertexIcons[i], v.x, v.y, 18);
-        ctx.globalAlpha=1;
-      }
     }
   });
 
@@ -2211,7 +2021,6 @@ function update(ts){
     updateRB(dt);
     if(!rbActive) updateSlots(dt);
 
-    // Decay beat flash during glyph phase too
     for(let i=0;i<activeSlots;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(phaseActive&&edgeDurs.length>0&&endPauseTimer<=0){
       if(!tutorialPaused) dotProg+=(1/edgeDurs[dotSeg])*(dt/1000);
@@ -2264,33 +2073,15 @@ function update(ts){
       if(!tutorialPaused&&dotSeg<glyphEdges.length){
         const fromV=glyphEdges[dotSeg].from;
         const msSinceCross=dotProg*edgeDurs[dotSeg]*1000;
-        const autoMissMs=BEAT*1000*0.40;
-        if(fromV>0&&!intHits[fromV]&&msSinceCross>autoMissMs){
-          console.log('AUTO-MISS vertex',fromV,'after',Math.floor(msSinceCross)+'ms','(threshold:'+Math.floor(autoMissMs)+'ms)');
+        if(fromV>0&&!intHits[fromV]&&msSinceCross>230){
           if(muteVertices.has(fromV)){
             intHits[fromV]=true; vertexRatings[fromV]='PERFECT';
             turnResults.push('PERFECT');
           } else {
           intHits[fromV]=true; vertexRatings[fromV]='MISS';
           turnResults.push('MISS'); allPerfectSoFar=false;
-          const autoMissII=iconDotVertices.indexOf(fromV);
-          if(autoMissII>=0){
-            slotTapAccuracy[autoMissII]=0;
-            if(matchIcon && slotIcons[autoMissII]===matchIcon) matchTapCount++;
-            sfx.slotLand(slotIcons[autoMissII]);
-          } else {
-            // Beat dot auto-miss: mark slot accuracy
-            const autoMissSlot=vertToSlot[fromV];
-            if(autoMissSlot!==undefined){
-              if(!halfBeatHits[autoMissSlot]) halfBeatHits[autoMissSlot]=[0,0];
-              // Mark as 0 accuracy for this half
-              if(halfBeatHits[autoMissSlot][1]===0 && halfBeatHits[autoMissSlot][0]>0) halfBeatHits[autoMissSlot][1]=0;
-              else halfBeatHits[autoMissSlot][0]=0;
-              slotTapAccuracy[autoMissSlot]=0;
-              if(matchIcon && slotIcons[autoMissSlot]===matchIcon) matchTapCount++;
-            }
-            sfx.tick();
-          }
+          const ii=iconDotVertices.indexOf(fromV);
+          if(ii>=0) sfx.slotLand(slotIcons[ii]); else sfx.tick();
           }
         }
       }
@@ -2300,27 +2091,15 @@ function update(ts){
       if(!tutorialPaused) endPauseTimer-=dt;
       // Grace period for last vertex
       const lastV=glyphEdges[glyphEdges.length-1].to;
-      const lastAutoMs=BEAT*1000*0.40;
-      if(!intHits[lastV]&&endPauseTimer<(BEAT*1000-lastAutoMs)){
+      if(!intHits[lastV]&&endPauseTimer<(BEAT*1000-230)){
         if(muteVertices.has(lastV)){
           intHits[lastV]=true; vertexRatings[lastV]='PERFECT';
           turnResults.push('PERFECT');
         } else {
         intHits[lastV]=true; vertexRatings[lastV]='MISS';
         turnResults.push('MISS'); allPerfectSoFar=false;
-        const lastMissII=iconDotVertices.indexOf(lastV);
-        if(lastMissII>=0){
-          slotTapAccuracy[lastMissII]=0;
-          if(matchIcon && slotIcons[lastMissII]===matchIcon) matchTapCount++;
-          sfx.slotLand(slotIcons[lastMissII]);
-        } else {
-          const lastMissSlot=vertToSlot[lastV];
-          if(lastMissSlot!==undefined){
-            slotTapAccuracy[lastMissSlot]=0;
-            if(matchIcon && slotIcons[lastMissSlot]===matchIcon) matchTapCount++;
-          }
-          sfx.tick();
-        }
+        const ii=iconDotVertices.indexOf(lastV);
+        if(ii>=0) sfx.slotLand(slotIcons[ii]); else sfx.tick();
         }
       }
       if(endPauseTimer<=0) finishPlaying();
