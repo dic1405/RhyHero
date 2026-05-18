@@ -308,7 +308,7 @@ function getEnemyHP(lvl){
   return Math.floor(850*Math.pow(1.05,lvl-10));
 }
 function updateTempo(){
-  currentBPM=getTempo(enemyNum)*speedMultiplier*(powerUpActive?1.5:1);
+  currentBPM=getTempo(enemyNum)*speedMultiplier*(powerUpActive?1.5:1)*(1+streakCount*0.15);
   if(enemyNum<=10) slotCount=3;
   else if(enemyNum<=25) slotCount=4;
   else slotCount=5;
@@ -673,6 +673,8 @@ let tutorialRollCount=0;
 let streak3TutorialDone=false, streak3TutorialActive=false;
 let bossTutorialFirstRoll=false;
 let particles=[], floatingAnims=[], shieldAnims=[];
+let criticalTextActive=false, criticalTextLabel='', criticalTextFade=0;
+const MATCH_RANK={'LUCKY TRIPLE':1,'MEGA QUAD':2,'JACKPOT':3,'LEGENDARY':4};
 let slashProjectiles=[];
 let shake=0, glow=0, lastTime=0, paused=false;
 
@@ -802,6 +804,7 @@ function startSlotPhase(){
   }
   slotRevealedIcons=new Array(activeSlots).fill(false);
   slotPhase='rolling'; slotRollAnim=0;
+  criticalTextActive=false; criticalTextFade=0; criticalTextLabel='';
   phaseActive=false; showingResults=false;
 
   baseValues={sword:0,shield:0,gold:0,bow:0};
@@ -809,16 +812,31 @@ function startSlotPhase(){
   allPerfectSoFar=true; isAllPerfect=false;
 
   // Pre-calculate per-slot values (progressive match)
-  const allSame=slotIcons.every(ic=>ic===slotIcons[0]);
+  // Count icon occurrences for partial match detection
+  const iconCounts={sword:0,shield:0,gold:0,bow:0};
+  slotIcons.forEach(ic=>iconCounts[ic]++);
+  let matchIcon=null, matchCount=0;
+  for(const ic in iconCounts){
+    if(iconCounts[ic]>=3 && iconCounts[ic]>matchCount){ matchIcon=ic; matchCount=iconCounts[ic]; }
+  }
+
   slotValues=[];
-  if(allSame&&MATCH_VALUES[slotIcons[0]][activeSlots]){
-    const total=MATCH_VALUES[slotIcons[0]][activeSlots];
-    const single=SINGLE_BASE[slotIcons[0]];
-    for(let i=0;i<activeSlots;i++)
-      slotValues.push({icon:slotIcons[i],value:i<activeSlots-1?single:total-single*(activeSlots-1)});
+  if(matchIcon && MATCH_VALUES[matchIcon] && MATCH_VALUES[matchIcon][matchCount]){
+    const total=MATCH_VALUES[matchIcon][matchCount];
+    const single=SINGLE_BASE[matchIcon];
+    let matchIdx=0;
+    for(let i=0;i<activeSlots;i++){
+      if(slotIcons[i]===matchIcon){
+        matchIdx++;
+        slotValues.push({icon:slotIcons[i], value: matchIdx<matchCount ? single : total-single*(matchCount-1), isMatch:true, matchN:matchIdx});
+      } else {
+        slotValues.push({icon:slotIcons[i], value:SINGLE_BASE[slotIcons[i]], isMatch:false, matchN:0});
+      }
+    }
   } else {
+    matchIcon=null; matchCount=0;
     for(let i=0;i<activeSlots;i++)
-      slotValues.push({icon:slotIcons[i],value:SINGLE_BASE[slotIcons[i]]});
+      slotValues.push({icon:slotIcons[i], value:SINGLE_BASE[slotIcons[i]], isMatch:false, matchN:0});
   }
 
   // Bow match bonuses
@@ -910,7 +928,7 @@ function applySlotReveal(idx){
     shieldAnims.push({life:1,x:W()/2,y:H()*.92});
   } else if(ic==='gold'){
     val=Math.floor(val*perfectStreakMultiplier); gold+=val;
-    spawnCoins(W()/2,H()*.5,'PERFECT');
+    spawnCoins(W()/2,H()*.5,'PERFECT',val);
   }
   updateUI();
 }
@@ -933,6 +951,17 @@ function updateSlots(dt){
           sfx.slotLand(ic);
         } else if(ic==='bow'){ play(bt==='F'?'bow_shoot':'bow_charge'); }
         else sfx.slotLand(ic);
+        // Critical sound for match icons 3+
+        if(slotValues[ev.slot] && slotValues[ev.slot].isMatch && slotValues[ev.slot].matchN>=3 && !slotBeats[ev.slot].startsWith('M')){
+          const critPitch=Math.pow(2,(slotValues[ev.slot].matchN-3)/12);
+          play('critical',0.9,critPitch);
+          const mn=slotValues[ev.slot].matchN;
+          const newLabel=mn>=6?'LEGENDARY':mn>=5?'JACKPOT':mn>=4?'MEGA QUAD':'LUCKY TRIPLE';
+          if(!criticalTextActive || (MATCH_RANK[newLabel]||0)>(MATCH_RANK[criticalTextLabel]||0)){
+            criticalTextLabel=newLabel;
+          }
+          criticalTextActive=true; criticalTextFade=1;
+        }
         slotBeatLines[ev.slot]=1; slotBeatFlash[ev.slot]=300;
         if(slotBeats[ev.slot]==='MF'&&slotIcons[ev.slot]==='bow'){
           bowCharge=0; bowShotDmg=0; bowFShotCount=0;
@@ -942,7 +971,7 @@ function updateSlots(dt){
       } else if(ev.action==='muteSnare'){
         play('mutebeat',0.6);
         if(ev.slot>=0){ slotBeatLines[ev.slot]=2; slotBeatFlash[ev.slot]=300; }
-      } else if(ev.action==='init'){ play('slot',0.5,Math.pow(2,Math.floor(streakCount/2)/12));
+      } else if(ev.action==='init'){ play('slot',0.5,Math.pow(2,streakCount/12));
       } else if(ev.action==='snare'){
         const sic=ev.slot>=0?slotIcons[ev.slot]:null;
         sfx.tick(); // always snare sound, even for bow
@@ -965,7 +994,7 @@ function updateSlots(dt){
     slotTimer-=dt;
     for(let i=0;i<activeSlots;i++) if(slotBeatFlash[i]>0) slotBeatFlash[i]-=dt;
     if(slotTimer<=0){
-      if(enemyHP<=0){ stopBGM(); setTimeout(()=>advanceEnemy(),1200); slotPhase='idle'; }
+      if(enemyHP<=0){ criticalTextActive=false; criticalTextFade=0; stopBGM(); setTimeout(()=>advanceEnemy(),1200); slotPhase='idle'; }
       else startGlyphPhase();
     }
   }
@@ -999,8 +1028,8 @@ function buildGlyph(edgeMults, cx, cy){
   const maxW=W()-40-30-(bowUnlocked?45:0);
   const maxVH=H()*0.46;
   const baseUnit=280*(3/Math.max(3,activeSlots));
-  const estH=shapeType===-1?gameW*0.5:gameW*Math.cos(baseAngle)*(shapeType===2?.6:1);
-  const estV=shapeType===-1?gameW*0.5+1:gameW*Math.sin(baseAngle)+1;
+  const estH=shapeType===-1?(n<=4?gameW:gameW*0.5):gameW*Math.cos(baseAngle)*(shapeType===2?.6:1);
+  const estV=shapeType===-1?(n<=4?1:gameW*0.5+1):gameW*Math.sin(baseAngle)+1;
   let unitLen=baseUnit;
   if(estH>0) unitLen=Math.min(unitLen, maxW/estH);
   if(estV>0) unitLen=Math.min(unitLen, maxVH/estV);
@@ -1066,12 +1095,13 @@ function buildGlyph(edgeMults, cx, cy){
 }
 
 function spawnSlashProjectile(damage){
-  const count=Math.min(10, Math.max(3, Math.floor(damage/15)));
-  const sz=Math.min(8, 2+damage/25);
+  const count=Math.min(15, Math.max(3, Math.floor(damage/10)));
+  const sz=Math.min(40, (3+damage/8)*2);
   const ex=W()/2, ey=H()*.08;
+  const spread=Math.min(80, 30+damage/2);
   for(let i=0;i<count;i++){
     slashProjectiles.push({
-      x:ex+(Math.random()-.5)*60,
+      x:ex+(Math.random()-.5)*spread,
       y:H()*.4+(Math.random()-.5)*30,
       tx:ex+(Math.random()-.5)*25,
       ty:ey+(Math.random()-.5)*12,
@@ -1094,7 +1124,7 @@ function startGlyphPhase(){
   turnResults=[]; phaseActive=true;
   tapValues={sword:0,shield:0,gold:0,bow:0};
   allPerfectSoFar=true; isAllPerfect=false;
-  play('slot',0.5,Math.pow(2,Math.floor(streakCount/2)/12));
+  play('slot',0.5,Math.pow(2,streakCount/12));
 }
 
 // ── Hit Detection ──
@@ -1103,7 +1133,16 @@ function getDotPos(){
   return {x:f.x+(t.x-f.x)*dotProg, y:f.y+(t.y-f.y)*dotProg};
 }
 
-function getPerfectWindow(){ return enemyNum<=10?75:45; }
+function getTimingWindows(){
+  // Windows based on full BEAT duration (not edge duration)
+  // Half-beat has same window as full-beat
+  const beatMs=BEAT*1000;
+  return {
+    perfect: beatMs * 0.15,
+    great: beatMs * 0.28,
+    cool: beatMs * 0.40
+  };
+}
 
 function evalHit(){
   // During end pause: dot is at last vertex, check timing since arrival
@@ -1111,18 +1150,20 @@ function evalHit(){
     const sinceArrival=BEAT*1000-endPauseTimer;
     const lastV=glyphEdges[glyphEdges.length-1].to;
     if(!intHits[lastV]){
-      if(sinceArrival<getPerfectWindow()) return {rating:'PERFECT',nearEnd:true,forceIdx:lastV};
-      if(sinceArrival<170) return {rating:'GREAT',nearEnd:true,forceIdx:lastV};
-      if(sinceArrival<230) return {rating:'COOL',nearEnd:true,forceIdx:lastV};
+      const tw=getTimingWindows();
+      if(sinceArrival<tw.perfect) return {rating:'PERFECT',nearEnd:true,forceIdx:lastV};
+      if(sinceArrival<tw.great) return {rating:'GREAT',nearEnd:true,forceIdx:lastV};
+      if(sinceArrival<tw.cool) return {rating:'COOL',nearEnd:true,forceIdx:lastV};
     }
     return {rating:'MISS',nearEnd:true};
   }
   const ms=edgeDurs[dotSeg]*1000;
   const tEnd=(1-dotProg)*ms, tStart=dotProg*ms;
   const near=tEnd<tStart, td=Math.min(tEnd,tStart);
-  if(td<getPerfectWindow()) return {rating:'PERFECT',nearEnd:near};
-  if(td<170) return {rating:'GREAT',nearEnd:near};
-  if(td<230) return {rating:'COOL',nearEnd:near};
+  const tw=getTimingWindows();
+  if(td<tw.perfect) return {rating:'PERFECT',nearEnd:near};
+  if(td<tw.great) return {rating:'GREAT',nearEnd:near};
+  if(td<tw.cool) return {rating:'COOL',nearEnd:near};
   return {rating:'MISS',nearEnd:near};
 }
 
@@ -1147,7 +1188,8 @@ function handleHit(){
         if(dotProg<0.5) msToVertex=dotProg*dur;
         else msToVertex=(1-dotProg)*dur;
       }
-      if(msToVertex<230){
+      const muteCoolWindow=BEAT*1000*0.40;
+      if(msToVertex<muteCoolWindow){
         intHits[nearV]=true; vertexRatings[nearV]='MISS'; turnResults.push('MISS');
         allPerfectSoFar=false;
         showFB('MISS'); play('mutebeat',0.8);
@@ -1216,7 +1258,7 @@ function applyTap(vi, rating){
     if(rating==='PERFECT') shake=Math.min(Math.max(val,2),3);
     if(icon==='sword'){ enemyHP=Math.max(0,enemyHP-val); updateUI(); spawnSlashProjectile(val); play('sword',vol); }
     else if(icon==='shield'){ playerShield=Math.min(playerShield+val,PLAYER_MAX_SHIELD); updateUI(); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); play('shield',vol); }
-    else { gold+=val; updateUI(); spawnCoins(vx,vy,rating); play('coin',vol); }
+    else { gold+=val; updateUI(); spawnCoins(vx,vy,rating,val); play('coin',vol); }
   } else if(vi>0){
     let ab={PERFECT:5,GREAT:2,COOL:1}[rating];
     let abShield={PERFECT:3,GREAT:2,COOL:1}[rating];
@@ -1224,15 +1266,28 @@ function applyTap(vi, rating){
     if(rating==='PERFECT') shake=Math.min(ab/3,2);
     if(baseValues.sword>0){ tapValues.sword+=ab; enemyHP=Math.max(0,enemyHP-ab); spawnSlashProjectile(ab); }
     if(baseValues.shield>0){ tapValues.shield+=abShield; playerShield=Math.min(playerShield+abShield,PLAYER_MAX_SHIELD); shieldAnims.push({life:1,x:W()/2,y:H()*.92}); }
-    if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating); }
+    if(baseValues.gold>0){ tapValues.gold+=ab; gold+=ab; spawnCoins(vx,vy,rating,ab); }
     if(baseValues.bow>0){ bowCharge+=ab; if(bowCharge>getBowMaxCharge()) bowCharge=0; }
     updateUI(); play('snare',vol*0.5);
   }
 }
 
-function spawnCoins(x,y,rating){
-  const n=rating==='PERFECT'?3:rating==='GREAT'?2:1;
-  for(let i=0;i<n;i++) floatingAnims.push({type:'coin',x:x+(Math.random()-.5)*20,y,vx:(Math.random()-.5)*2,vy:-3-Math.random()*2,life:1,size:14+Math.random()*4});
+function spawnCoins(x,y,rating,goldAmt){
+  const n=Math.min(25, Math.max(1, goldAmt||1));
+  const baseSize=12+Math.min(6,goldAmt/10);
+  for(let i=0;i<n;i++){
+    const delay=i*30;
+    const spread=Math.min(40,n*3);
+    floatingAnims.push({
+      type:'coin',
+      x:x+(Math.random()-.5)*spread,
+      y:y+(Math.random()-.5)*10,
+      vx:(Math.random()-.5)*3,
+      vy:-2.5-Math.random()*2.5,
+      life:1,
+      size:baseSize+Math.random()*4
+    });
+  }
 }
 
 function spawnParticles(x,y,rating){
@@ -1248,12 +1303,10 @@ function spawnParticles(x,y,rating){
 // Opacity table: [glyphAlpha, circleBase, timingLo, timingHi]
 const STREAK_OPACITY = [
   [1.00, 1.00, 1.00, 1.00], // streak 0
-  [0.50, 0.80, 0.70, 0.80], // streak 1 (circle +20%)
-  [0.10, 0.35, 0.20, 0.30], // streak 2 (circle +20%)
-  [0.00, 0.25, 0.10, 0.15], // streak 3 (circle +20%)
-  [0.00, 0.00, 0.15, 0.15], // streak 4
-  [0.00, 0.00, 0.15, 0.15], // streak 5
-  [0.00, 0.00, 0.15, 0.15], // streak 6+
+  [0.10, 0.50, 0.70, 0.80], // streak 1
+  [0.00, 0.20, 0.25, 0.35], // streak 2
+  [0.00, 0.05, 0.10, 0.15], // streak 3
+  [0.00, 0.00, 0.00, 0.15], // streak 4+
 ];
 function getStreakOpacity(){
   const i=Math.min(streakCount, STREAK_OPACITY.length-1);
@@ -1266,7 +1319,7 @@ function getStreakSlotCount(){
 }
 
 function finishPlaying(){
-  powerUpActive=false;
+  criticalTextActive=false;
 
   phaseActive=false; showingResults=true;
   const tappable=totalInts-1;
@@ -1274,10 +1327,11 @@ function finishPlaying(){
   isAllPerfect=allPerfectSoFar;
   const noMiss=turnResults.every(r=>r!=='MISS')&&turnResults.length>0;
 
-  if(enemyHP<=0){ streakCount=0; perfectStreakCount=0; perfectStreakMultiplier=1.0; stopBGM(); bgmPending=false; bgm2Pending=false; setTimeout(()=>advanceEnemy(),1200); return; }
+  if(enemyHP<=0){ criticalTextActive=false; criticalTextFade=0; streakCount=0; perfectStreakCount=0; perfectStreakMultiplier=1.0; stopBGM(); bgmPending=false; bgm2Pending=false; setTimeout(()=>advanceEnemy(),1200); return; }
 
   if(noMiss){
     streakCount++; streakActive=true; streakTextTimer=BEAT*1000;
+    updateTempo(); // update BPM with new streak
     // BGM: mark pending at streak 3, will start at first glyph dot
     if(streakCount>=3&&!bgmPlaying) bgmPending=true;
     if(bgmPlaying) updateBGMVolume();
@@ -1315,7 +1369,7 @@ function finishPlaying(){
     }
   } else {
     streakCount=0; streakActive=false; perfectStreakCount=0; perfectStreakMultiplier=1.0;
-    stopBGM(); bgmPending=false; bgm2Pending=false;
+    updateTempo(); stopBGM(); bgmPending=false; bgm2Pending=false;
     setTimeout(()=>{ showingResults=false; $('result-display').textContent=''; enemyTurn(); },800);
   }
 }
@@ -1355,7 +1409,7 @@ function updateRB(dt){
       
       streakCount=0;streakActive=false;perfectStreakCount=0;perfectStreakMultiplier=1.0;
       stopBGM();
-      if(enemyHP<=0){ setTimeout(()=>advanceEnemy(),1200); }
+      if(enemyHP<=0){ criticalTextActive=false; criticalTextFade=0; setTimeout(()=>advanceEnemy(),1200); }
       else { setTimeout(()=>showRollButton(),300); }
     }
   }
@@ -1520,7 +1574,7 @@ function drawEnemyTurn(){
 
 function advanceEnemy(){
   stopBGM(); bgmPending=false; bgm2Pending=false;
-  gold+=20; bowCharge=0; bowShotDmg=0; bowShooting=false; bowFShotCount=0; // defeat bonus + bow reset
+  gold+=20; powerUpActive=false; bowCharge=0; bowShotDmg=0; bowShooting=false; bowFShotCount=0; // defeat bonus + bow reset
   enemyNum++;
   enemyMaxHP=getEnemyHP(enemyNum); enemyHP=enemyMaxHP;
   // ATK: +5/lvl (1-4), +10/lvl (5-10), +20/lvl (11+)
@@ -1553,7 +1607,7 @@ function resetGame(){
   updateTempo();
   slotPhase='idle'; phaseActive=false; showingResults=false;
   paused=false; $('pause-screen').style.display='none'; $('pause-btn').textContent='⏸';
-  particles=[]; shake=0; floatingAnims=[]; shieldAnims=[]; slashProjectiles=[];
+  particles=[]; shake=0; floatingAnims=[]; criticalTextActive=false; criticalTextFade=0; shieldAnims=[]; slashProjectiles=[];
   streakCount=0; streakActive=false; perfectStreakCount=0; perfectStreakMultiplier=1.0;
   stopBGM();
   tutorialActive=false; tutorialPaused=false; tutorialStep=0; tutorialDone=false; tutorialRollCount=0;
@@ -1617,7 +1671,8 @@ $('resume-btn').addEventListener('click',togglePause);
     ['mutebeat','MuteBeat.wav'],
     ['rhythmbust','RhythmBust.wav'],
     ['rhythmbust_shoot','RhythmBustShoot.mp3'],
-    ['streak_perfect','Streak_perfect.wav']
+    ['streak_perfect','Streak_perfect.wav'],
+    ['critical','Critical.wav']
   ];
   const imageNames=['sword','shield','gold','bow'];
   const total=audioFiles.length+imageNames.length;
@@ -1810,9 +1865,10 @@ function drawGlyph(){
 
     // Circle opacity: ramp from circleBase to timingHi as dot approaches
     let circleA=so[1]; // base circle opacity
-    if(td<230&&td!==Infinity){
-      // Within timing window: ramp from timingLo (at 230ms) to timingHi (at 0ms)
-      const t=1-td/230; // 0 at 230ms, 1 at 0ms
+    const vizCoolMs=BEAT*1000*0.40;
+    if(td<vizCoolMs&&td!==Infinity){
+      // Within timing window: ramp to timingHi as dot approaches
+      const t=1-td/vizCoolMs;
       circleA=so[2]+(so[3]-so[2])*t;
     }
     ctx.globalAlpha=Math.min(1,circleA);
@@ -1869,9 +1925,11 @@ function drawEnemy(){
 }
 
 function updateAnims(dt){
+  if(criticalTextActive){ criticalTextFade=Math.min(1,criticalTextFade+dt/200); }
+  else if(criticalTextFade>0){ criticalTextFade=Math.max(0,criticalTextFade-dt/300); }
   const decay=dt/800;
   floatingAnims=floatingAnims.filter(a=>a.life>0);
-  floatingAnims.forEach(a=>{a.x+=a.vx;a.y+=a.vy;a.vy+=.08;a.life-=decay;});
+  floatingAnims.forEach(a=>{a.x+=a.vx;a.y+=a.vy;a.vy+=.08; if(a.y>=H()*.90) a.life-=decay*3; });
   shieldAnims=shieldAnims.filter(a=>a.life>0);
   shieldAnims.forEach(a=>{a.life-=dt/500;});
   slashProjectiles=slashProjectiles.filter(p=>p.life>0);
@@ -1887,13 +1945,27 @@ function updateAnims(dt){
 function drawAnims(){
   ctx.globalAlpha=1;
   floatingAnims.forEach(a=>{ctx.globalAlpha=Math.max(0,a.life);drawIcon('gold',a.x,a.y,a.size);ctx.globalAlpha=1;});
+  // Critical/match text - persists until glyph ends
+  if(criticalTextActive || criticalTextFade>0){
+    ctx.save();
+    ctx.globalAlpha=Math.min(1, criticalTextFade);
+    const pulse=0.5+0.5*Math.sin(Date.now()/150);
+    ctx.font='bold 32px ByteBounce';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#ffcc00';
+    ctx.shadowColor='#ff6600';
+    ctx.shadowBlur=12+pulse*8;
+    ctx.fillText(criticalTextLabel, W()/2, H()*0.36);
+    ctx.shadowBlur=0;
+    ctx.restore();
+  }
   // Slash projectiles — red streaks flying toward enemy
   slashProjectiles.forEach(p=>{
     ctx.globalAlpha=Math.max(0,p.life);
     ctx.fillStyle='#ff4466';
     ctx.beginPath();ctx.arc(p.x,p.y,Math.max(0,p.size*p.life),0,Math.PI*2);ctx.fill();
     // Trail
-    ctx.strokeStyle='#ff446688';ctx.lineWidth=p.size*.5;
+    ctx.strokeStyle='#ff446688';ctx.lineWidth=p.size*.7;
     ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+(p.x-p.tx)*.3,p.y+(p.y-p.ty)*.3);ctx.stroke();
     ctx.globalAlpha=1;
   });
