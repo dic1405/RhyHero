@@ -788,17 +788,27 @@ function startSlotPhase(){
     slotBeats=['F','F','MF'];
   } else if(isBoss(enemyNum)&&Math.random()<0.5){
     const muteCount=Math.random()<0.5?1:2;
-    const available=[...Array(activeSlots).keys()];
-    for(let m=0;m<muteCount&&available.length>0;m++){
-      const pick=available.splice(Math.floor(Math.random()*available.length),1)[0];
-      const ic=slotIcons[pick];
-      if(ic==='sword'){
+    if(enemyNum===5){
+      // Boss L5: mute only full beat (F) slots → MF only
+      const available=[...Array(activeSlots).keys()].filter(i=>slotBeats[i]==='F');
+      for(let m=0;m<muteCount&&available.length>0;m++){
+        const pick=available.splice(Math.floor(Math.random()*available.length),1)[0];
         slotBeats[pick]='MF';
-      } else {
-        const r=Math.random();
-        if(r<0.33) slotBeats[pick]='MF';
-        else if(r<0.66) slotBeats[pick]='MH';
-        else slotBeats[pick]='HM';
+      }
+    } else {
+      // Other bosses: mute any slot, MF/MH/HM
+      const available=[...Array(activeSlots).keys()];
+      for(let m=0;m<muteCount&&available.length>0;m++){
+        const pick=available.splice(Math.floor(Math.random()*available.length),1)[0];
+        const ic=slotIcons[pick];
+        if(ic==='sword'){
+          slotBeats[pick]='MF';
+        } else {
+          const r=Math.random();
+          if(r<0.33) slotBeats[pick]='MF';
+          else if(r<0.66) slotBeats[pick]='MH';
+          else slotBeats[pick]='HM';
+        }
       }
     }
   }
